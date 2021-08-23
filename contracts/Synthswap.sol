@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "./interfaces/ISynthSwap.sol";
 import "./interfaces/IERC20.sol";
 
 interface ISwapRouter {
@@ -27,9 +28,9 @@ interface ISynthetix {
     ) external returns (uint amountReceived);
 }
 
-contract SynthSwap {
+contract SynthSwap is ISynthSwap {
     
-    bytes32 sUSDCurrencyKey = bytes32(0x7355534400000000000000000000000000000000000000000000000000000000);
+    bytes32 constant SUSD_CURRENCY_KEY = bytes32(0x7355534400000000000000000000000000000000000000000000000000000000);
     
     ISwapRouter UniswapRouter;
     ISynthetix Synthetix;
@@ -44,9 +45,8 @@ contract SynthSwap {
         volumeRewards = _volumeRewards;
     }
     
-    function swapInto(address inputToken, uint inputTokenAmount, bytes calldata uniswapSwapRoute, bytes32 _destinationSynthCurrencyKey) public {
+    function swapInto(address inputToken, uint inputTokenAmount, bytes calldata uniswapSwapRoute, bytes32 _destinationSynthCurrencyKey) external override {
         
-        // transfer into contract and approve for uniswap
         IERC20 InputERC20 = IERC20(inputToken);
         InputERC20.transferFrom(msg.sender, address(this), inputTokenAmount);
         
@@ -65,7 +65,7 @@ contract SynthSwap {
         // synthetix exchange
         IERC20(sUSD).approve(address(Synthetix), amountOut);
         Synthetix.exchangeWithTrackingForInitiator(
-            sUSDCurrencyKey, //source currency key
+            SUSD_CURRENCY_KEY, //source currency key
             amountOut, //source amount
              _destinationSynthCurrencyKey, //destination currency key
             volumeRewards, // volume rewards address 
