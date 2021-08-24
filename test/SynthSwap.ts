@@ -59,4 +59,8 @@ describe("SynthSwap", function () {
         AMOUNT_TO_SWAP * UNISWAP_EXCHANGE_RATE * SYNTHETIX_EXCHANGE_RATE
       );
   });
+
+  // TODO
+  it("Should execute swapOutOf()", async function () {});
+
 });

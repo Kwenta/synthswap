@@ -18,5 +18,4 @@ interface ISynthSwap {
         uint tokenAmountOutMinimum
     ) external returns (uint);
 
-
 }
