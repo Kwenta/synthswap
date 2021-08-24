@@ -4,5 +4,6 @@ pragma solidity ^0.8.0;
 interface ISynthSwap {
 
     function swapInto(address inputToken, uint inputTokenAmount, bytes calldata uniswapSwapRoute, bytes32 _destinationSynthCurrencyKey) external;
+    function swapOutOf(address inputSynth, bytes32 sourceSynthCurrencyKey, uint inputSynthAmount, bytes calldata uniswapSwapRoute) external;
 
 }

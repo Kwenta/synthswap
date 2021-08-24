@@ -68,10 +68,64 @@ contract SynthSwap is ISynthSwap {
             SUSD_CURRENCY_KEY, //source currency key
             amountOut, //source amount
              _destinationSynthCurrencyKey, //destination currency key
-            volumeRewards, // volume rewards address 
+            volumeRewards, // volume rewards address
             'KWENTA' //tracking code
         );
         
+    }
+
+    /// @notice swapOutOf swaps a fixed amount (`inputSynthAmount`) of 'inputSynth` for a maximum 
+    /// possible amount of `outputToken` through an intermediary pool.
+    /// @dev The calling address must approve this contract to spend at least `inputSynthAmount` 
+    /// worth of its 'inputSynth` for this function to succeed.
+    /// The target ERC20 token (destination) is defined in `uniswapSwapRoute`
+    /// @param inputSynth Synth to be swapped
+    /// @param inputSynthAmount The amount of synth to be swapped
+    /// @param uniswapSwapRoute sequence of token addresses and poolFees that define the pools used in the swaps
+    function swapOutOf(
+        address inputSynth, 
+        bytes32 sourceSynthCurrencyKey,
+        uint inputSynthAmount, 
+        bytes calldata uniswapSwapRoute
+    ) 
+        external 
+        override 
+    {
+
+        // Transfer `inputSynthAmount` of inputSynth to this contract.
+        IERC20 InputERC20 = IERC20(inputSynth);
+        InputERC20.transferFrom(msg.sender, address(this), inputSynthAmount);
+
+        // Approve the Synthetix router to spend `inputSynth`.
+        InputERC20.approve(address(Synthetix), inputSynthAmount);
+
+        // Swap `inputSynth` with sUSD by providing both the source and destination currency keys. 
+        uint256 amountOut = Synthetix.exchangeWithTrackingForInitiator(
+            sourceSynthCurrencyKey, // source currency key
+            inputSynthAmount, // source amount
+            SUSD_CURRENCY_KEY, // destination currency key
+            volumeRewards, // volume rewards address
+            'KWENTA' // tracking code
+        );
+
+        // Approve the Uniswap router to spend sUSD.
+        InputERC20.approve(address(UniswapRouter), amountOut);
+
+        // Multiple pool swaps are encoded through bytes called a `path`. A path is a sequence of token addresses 
+        // and poolFees that define the pools used in the swaps.
+        // The format for pool encoding is (tokenIn, fee, tokenOut/tokenIn, fee, tokenOut) where tokenIn/tokenOut 
+        // parameter is the shared token across the pools.
+        ISwapRouter.ExactInputParams memory params =
+            ISwapRouter.ExactInputParams(
+                uniswapSwapRoute, // specifies final token destination
+                msg.sender, 
+                block.timestamp + 20 minutes, 
+                amountOut,
+                0 // TODO calculate and pass through minimum slippage to protect users when swapping
+            );
+
+        // Executes the swap.
+        UniswapRouter.exactInput(params);
     }
     
 }
