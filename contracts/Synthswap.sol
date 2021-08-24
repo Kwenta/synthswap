@@ -36,6 +36,9 @@ contract SynthSwap is ISynthSwap {
     ISynthetix Synthetix;
     address sUSD;
     address volumeRewards;
+
+    event SwapInto(address from, uint amountReceived);
+    event SwapOutOf(address from, uint amountReceived);
     
     constructor (address _uniswapRouter, address _synthetix, address _sUSD, address _volumeRewards) {
         UniswapRouter = ISwapRouter(_uniswapRouter);
@@ -45,7 +48,13 @@ contract SynthSwap is ISynthSwap {
         volumeRewards = _volumeRewards;
     }
     
-    function swapInto(address inputToken, uint inputTokenAmount, bytes calldata uniswapSwapRoute, bytes32 _destinationSynthCurrencyKey) external override {
+    function swapInto(
+        address inputToken, 
+        uint inputTokenAmount, 
+        bytes calldata uniswapSwapRoute, 
+        uint sUSDAmountOutMinimum,
+        bytes32 _destinationSynthCurrencyKey
+    ) external override returns (uint) {
         
         IERC20 InputERC20 = IERC20(inputToken);
         InputERC20.transferFrom(msg.sender, address(this), inputTokenAmount);
@@ -58,19 +67,22 @@ contract SynthSwap is ISynthSwap {
                 address(this), 
                 block.timestamp + 20 minutes, 
                 inputTokenAmount,
-                0 // TODO calculate and pass through minimum slippage to protect users when swapping
+                sUSDAmountOutMinimum
             )
         );
         
         // synthetix exchange
         IERC20(sUSD).approve(address(Synthetix), amountOut);
-        Synthetix.exchangeWithTrackingForInitiator(
+        uint amountReceived = Synthetix.exchangeWithTrackingForInitiator(
             SUSD_CURRENCY_KEY, //source currency key
             amountOut, //source amount
              _destinationSynthCurrencyKey, //destination currency key
             volumeRewards, // volume rewards address
             'KWENTA' //tracking code
         );
+
+        emit SwapInto(msg.sender, amountReceived);
+        return amountReceived;
         
     }
 
@@ -78,19 +90,18 @@ contract SynthSwap is ISynthSwap {
     /// possible amount of `outputToken` through an intermediary pool.
     /// @dev The calling address must approve this contract to spend at least `inputSynthAmount` 
     /// worth of its 'inputSynth` for this function to succeed.
-    /// The target ERC20 token (destination) is defined in `uniswapSwapRoute`
+    /// The target ERC20 token (destination) is defined via `uniswapSwapRoute`.
     /// @param inputSynth Synth to be swapped
     /// @param inputSynthAmount The amount of synth to be swapped
     /// @param uniswapSwapRoute sequence of token addresses and poolFees that define the pools used in the swaps
+    /// @param tokenAmountOutMinimum minimum amount of target token required for this function to succeed
     function swapOutOf(
         address inputSynth, 
         bytes32 sourceSynthCurrencyKey,
-        uint inputSynthAmount, 
-        bytes calldata uniswapSwapRoute
-    ) 
-        external 
-        override 
-    {
+        uint inputSynthAmount,
+        bytes calldata uniswapSwapRoute,
+        uint tokenAmountOutMinimum
+    ) external override returns (uint256 amountReceived) {
 
         // Transfer `inputSynthAmount` of inputSynth to this contract.
         IERC20 InputERC20 = IERC20(inputSynth);
@@ -121,11 +132,12 @@ contract SynthSwap is ISynthSwap {
                 msg.sender, 
                 block.timestamp + 20 minutes, 
                 amountOut,
-                0 // TODO calculate and pass through minimum slippage to protect users when swapping
+                tokenAmountOutMinimum
             );
 
         // Executes the swap.
-        UniswapRouter.exactInput(params);
+        amountReceived = UniswapRouter.exactInput(params);
+        emit SwapOutOf(msg.sender, amountReceived);
     }
     
 }
