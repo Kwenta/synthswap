@@ -47,6 +47,7 @@ describe("SynthSwap", function () {
         mockERC20.address,
         AMOUNT_TO_SWAP,
         ethers.constants.HashZero,
+        0,
         ethers.constants.HashZero
       )
     )

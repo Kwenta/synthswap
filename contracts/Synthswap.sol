@@ -51,6 +51,7 @@ contract SynthSwap is ISynthSwap {
         address inputToken, 
         uint inputTokenAmount, 
         bytes calldata uniswapSwapRoute, 
+        uint sUSDAmountOutMinimum,
         bytes32 _destinationSynthCurrencyKey
     ) external override returns (uint) {
         
@@ -65,7 +66,7 @@ contract SynthSwap is ISynthSwap {
                 address(this), 
                 block.timestamp + 20 minutes, 
                 inputTokenAmount,
-                0 // TODO calculate and pass through minimum slippage to protect users when swapping
+                sUSDAmountOutMinimum
             )
         );
         
