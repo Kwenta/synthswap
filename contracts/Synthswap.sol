@@ -36,6 +36,8 @@ contract SynthSwap is ISynthSwap {
     ISynthetix Synthetix;
     address sUSD;
     address volumeRewards;
+
+    event SwapInto(address from, uint amountReceived);
     
     constructor (address _uniswapRouter, address _synthetix, address _sUSD, address _volumeRewards) {
         UniswapRouter = ISwapRouter(_uniswapRouter);
@@ -45,7 +47,12 @@ contract SynthSwap is ISynthSwap {
         volumeRewards = _volumeRewards;
     }
     
-    function swapInto(address inputToken, uint inputTokenAmount, bytes calldata uniswapSwapRoute, bytes32 _destinationSynthCurrencyKey) external override {
+    function swapInto(
+        address inputToken, 
+        uint inputTokenAmount, 
+        bytes calldata uniswapSwapRoute, 
+        bytes32 _destinationSynthCurrencyKey
+    ) external override returns (uint) {
         
         IERC20 InputERC20 = IERC20(inputToken);
         InputERC20.transferFrom(msg.sender, address(this), inputTokenAmount);
@@ -64,13 +71,16 @@ contract SynthSwap is ISynthSwap {
         
         // synthetix exchange
         IERC20(sUSD).approve(address(Synthetix), amountOut);
-        Synthetix.exchangeWithTrackingForInitiator(
+        uint amountReceived = Synthetix.exchangeWithTrackingForInitiator(
             SUSD_CURRENCY_KEY, //source currency key
             amountOut, //source amount
              _destinationSynthCurrencyKey, //destination currency key
             volumeRewards, // volume rewards address 
             'KWENTA' //tracking code
         );
+
+        emit SwapInto(msg.sender, amountReceived);
+        return amountReceived;
         
     }
     
