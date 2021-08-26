@@ -10,6 +10,7 @@ interface ISynthSwap {
         uint sUSDAmountOutMinimum, 
         bytes32 _destinationSynthCurrencyKey
     ) external returns (uint);
+    
     function swapOutOf(
         address inputSynth, 
         bytes32 sourceSynthCurrencyKey, 
