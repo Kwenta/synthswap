@@ -120,7 +120,7 @@ contract SynthSwap is ISynthSwap {
         );
 
         // Approve the Uniswap router to spend sUSD.
-        SafeERC20.safeApprove(InputERC20, address(UniswapRouter), amountOut);
+        SafeERC20.safeApprove(IERC20(sUSD), address(UniswapRouter), amountOut);
 
         // Multiple pool swaps are encoded through bytes called a `path`. A path is a sequence of token addresses 
         // and poolFees that define the pools used in the swaps.
