@@ -84,7 +84,6 @@ contract SynthSwap is ISynthSwap {
 
         emit SwapInto(msg.sender, amountReceived);
         return amountReceived;
-        
     }
 
     /// @notice swapOutOf swaps a fixed amount (`inputSynthAmount`) of 'inputSynth` for a maximum 
