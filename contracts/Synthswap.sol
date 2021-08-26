@@ -58,10 +58,10 @@ contract SynthSwap is ISynthSwap {
     ) external override returns (uint) {
         
         IERC20 InputERC20 = IERC20(inputToken);
-        InputERC20.safeTransferFrom(msg.sender, address(this), inputTokenAmount);
+        SafeERC20.safeTransferFrom(InputERC20, msg.sender, address(this), inputTokenAmount);
         
         // uniswap swap
-        InputERC20.safeApprove(address(UniswapRouter), inputTokenAmount);
+        SafeERC20.safeApprove(InputERC20, address(UniswapRouter), inputTokenAmount);
         uint256 amountOut = UniswapRouter.exactInput(
             ISwapRouter.ExactInputParams(
                 uniswapSwapRoute, 
@@ -73,7 +73,7 @@ contract SynthSwap is ISynthSwap {
         );
         
         // synthetix exchange
-        IERC20(sUSD).safeApprove(address(Synthetix), amountOut);
+        SafeERC20.safeApprove(IERC20(sUSD), address(Synthetix), amountOut);
         uint amountReceived = Synthetix.exchangeWithTrackingForInitiator(
             SUSD_CURRENCY_KEY, //source currency key
             amountOut, //source amount
@@ -105,10 +105,10 @@ contract SynthSwap is ISynthSwap {
 
         // Transfer `inputSynthAmount` of inputSynth to this contract.
         IERC20 InputERC20 = IERC20(inputSynth);
-        InputERC20.safeTransferFrom(msg.sender, address(this), inputSynthAmount);
+        SafeERC20.safeTransferFrom(InputERC20, msg.sender, address(this), inputSynthAmount);
 
         // Approve the Synthetix router to spend `inputSynth`.
-        InputERC20.safeApprove(address(Synthetix), inputSynthAmount);
+        SafeERC20.safeApprove(InputERC20, address(Synthetix), inputSynthAmount);
 
         // Swap `inputSynth` with sUSD by providing both the source and destination currency keys. 
         uint256 amountOut = Synthetix.exchangeWithTrackingForInitiator(
@@ -120,7 +120,7 @@ contract SynthSwap is ISynthSwap {
         );
 
         // Approve the Uniswap router to spend sUSD.
-        InputERC20.safeApprove(address(UniswapRouter), amountOut);
+        SafeERC20.safeApprove(InputERC20, address(UniswapRouter), amountOut);
 
         // Multiple pool swaps are encoded through bytes called a `path`. A path is a sequence of token addresses 
         // and poolFees that define the pools used in the swaps.
