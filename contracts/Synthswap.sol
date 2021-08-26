@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/ISynthSwap.sol";
-import "./interfaces/IERC20.sol";
+import "./utils/SafeERC20.sol";
 
 interface ISwapRouter {
     struct ExactInputParams {
@@ -29,6 +29,7 @@ interface ISynthetix {
 }
 
 contract SynthSwap is ISynthSwap {
+    using SafeERC20 for IERC20;
     
     bytes32 constant SUSD_CURRENCY_KEY = bytes32(0x7355534400000000000000000000000000000000000000000000000000000000);
     
@@ -57,10 +58,10 @@ contract SynthSwap is ISynthSwap {
     ) external override returns (uint) {
         
         IERC20 InputERC20 = IERC20(inputToken);
-        InputERC20.transferFrom(msg.sender, address(this), inputTokenAmount);
+        InputERC20.safeTransferFrom(msg.sender, address(this), inputTokenAmount);
         
         // uniswap swap
-        InputERC20.approve(address(UniswapRouter), inputTokenAmount);
+        InputERC20.safeApprove(address(UniswapRouter), inputTokenAmount);
         uint256 amountOut = UniswapRouter.exactInput(
             ISwapRouter.ExactInputParams(
                 uniswapSwapRoute, 
@@ -72,7 +73,7 @@ contract SynthSwap is ISynthSwap {
         );
         
         // synthetix exchange
-        IERC20(sUSD).approve(address(Synthetix), amountOut);
+        IERC20(sUSD).safeApprove(address(Synthetix), amountOut);
         uint amountReceived = Synthetix.exchangeWithTrackingForInitiator(
             SUSD_CURRENCY_KEY, //source currency key
             amountOut, //source amount
@@ -105,10 +106,10 @@ contract SynthSwap is ISynthSwap {
 
         // Transfer `inputSynthAmount` of inputSynth to this contract.
         IERC20 InputERC20 = IERC20(inputSynth);
-        InputERC20.transferFrom(msg.sender, address(this), inputSynthAmount);
+        InputERC20.safeTransferFrom(msg.sender, address(this), inputSynthAmount);
 
         // Approve the Synthetix router to spend `inputSynth`.
-        InputERC20.approve(address(Synthetix), inputSynthAmount);
+        InputERC20.safeApprove(address(Synthetix), inputSynthAmount);
 
         // Swap `inputSynth` with sUSD by providing both the source and destination currency keys. 
         uint256 amountOut = Synthetix.exchangeWithTrackingForInitiator(
@@ -120,7 +121,7 @@ contract SynthSwap is ISynthSwap {
         );
 
         // Approve the Uniswap router to spend sUSD.
-        InputERC20.approve(address(UniswapRouter), amountOut);
+        InputERC20.safeApprove(address(UniswapRouter), amountOut);
 
         // Multiple pool swaps are encoded through bytes called a `path`. A path is a sequence of token addresses 
         // and poolFees that define the pools used in the swaps.
