@@ -49,6 +49,15 @@ contract SynthSwap is ISynthSwap {
         volumeRewards = _volumeRewards;
     }
     
+    /// @notice swapInto swaps a fixed amount (`inputTokenAmount`) of `inputToken` for a maximum 
+    /// possible amount of synth designated by `_destinationSynthCurrencyKey` through an intermediary pool.
+    /// @dev The calling address must approve this contract to spend at least `inputTokenAmount` 
+    /// worth of its `inputToken` for this function to succeed.
+    /// @param inputToken Token to be swapped
+    /// @param inputTokenAmount Amount of token to be swapped
+    /// @param uniswapSwapRoute Sequence of token addresses and poolFees that define the pools used in the swaps
+    /// @param sUSDAmountOutMinimum Minimum amount of target synth required for this function to succeed
+    /// @param _destinationSynthCurrencyKey Currency key to designate destination synth
     function swapInto(
         address inputToken, 
         uint inputTokenAmount, 
@@ -57,11 +66,17 @@ contract SynthSwap is ISynthSwap {
         bytes32 _destinationSynthCurrencyKey
     ) external override returns (uint) {
         
+        // Transfer `inputTokenAmount` of inputToken to this contract.
         IERC20 InputERC20 = IERC20(inputToken);
         SafeERC20.safeTransferFrom(InputERC20, msg.sender, address(this), inputTokenAmount);
         
-        // uniswap swap
-        SafeERC20.safeApprove(InputERC20, address(UniswapRouter), inputTokenAmount);
+        // Approve the Uniswap router to spend `inputToken`.
+        SafeERC20.safeIncreaseAllowance(InputERC20, address(UniswapRouter), inputTokenAmount);
+
+        // Multiple pool swaps are encoded through bytes called a `path`. A path is a sequence of token addresses 
+        // and poolFees that define the pools used in the swaps.
+        // The format for pool encoding is (tokenIn, fee, tokenOut/tokenIn, fee, tokenOut) where tokenIn/tokenOut 
+        // parameter is the shared token across the pools.
         uint256 amountOut = UniswapRouter.exactInput(
             ISwapRouter.ExactInputParams(
                 uniswapSwapRoute, 
@@ -72,24 +87,27 @@ contract SynthSwap is ISynthSwap {
             )
         );
         
-        // synthetix exchange
-        SafeERC20.safeApprove(IERC20(sUSD), address(Synthetix), amountOut);
+        // Approve the Synthetix router to spend sUSD.
+        SafeERC20.safeIncreaseAllowance(IERC20(sUSD), address(Synthetix), amountOut);
+        
+        // Swap sUSD with destination synth by providing the destination currency key.
         uint amountReceived = Synthetix.exchangeWithTrackingForInitiator(
-            SUSD_CURRENCY_KEY, //source currency key
-            amountOut, //source amount
-             _destinationSynthCurrencyKey, //destination currency key
+            SUSD_CURRENCY_KEY, // source currency key
+            amountOut, // source amount
+             _destinationSynthCurrencyKey, // destination currency key
             volumeRewards, // volume rewards address
-            'KWENTA' //tracking code
+            'KWENTA' // tracking code
         );
 
+        // Executes the swap.
         emit SwapInto(msg.sender, amountReceived);
         return amountReceived;
     }
 
-    /// @notice swapOutOf swaps a fixed amount (`inputSynthAmount`) of 'inputSynth` for a maximum 
+    /// @notice swapOutOf swaps a fixed amount (`inputSynthAmount`) of `inputSynth` for a maximum 
     /// possible amount of `outputToken` through an intermediary pool.
     /// @dev The calling address must approve this contract to spend at least `inputSynthAmount` 
-    /// worth of its 'inputSynth` for this function to succeed.
+    /// worth of its `inputSynth` for this function to succeed.
     /// The target ERC20 token (destination) is defined via `uniswapSwapRoute`.
     /// @param inputSynth Synth to be swapped
     /// @param inputSynthAmount The amount of synth to be swapped
@@ -108,7 +126,7 @@ contract SynthSwap is ISynthSwap {
         SafeERC20.safeTransferFrom(InputERC20, msg.sender, address(this), inputSynthAmount);
 
         // Approve the Synthetix router to spend `inputSynth`.
-        SafeERC20.safeApprove(InputERC20, address(Synthetix), inputSynthAmount);
+        SafeERC20.safeIncreaseAllowance(InputERC20, address(Synthetix), inputSynthAmount);
 
         // Swap `inputSynth` with sUSD by providing both the source and destination currency keys. 
         uint256 amountOut = Synthetix.exchangeWithTrackingForInitiator(
@@ -120,7 +138,7 @@ contract SynthSwap is ISynthSwap {
         );
 
         // Approve the Uniswap router to spend sUSD.
-        SafeERC20.safeApprove(IERC20(sUSD), address(UniswapRouter), amountOut);
+        SafeERC20.safeIncreaseAllowance(IERC20(sUSD), address(UniswapRouter), amountOut);
 
         // Multiple pool swaps are encoded through bytes called a `path`. A path is a sequence of token addresses 
         // and poolFees that define the pools used in the swaps.
@@ -129,8 +147,8 @@ contract SynthSwap is ISynthSwap {
         ISwapRouter.ExactInputParams memory params =
             ISwapRouter.ExactInputParams(
                 uniswapSwapRoute, // specifies final token destination
-                msg.sender, 
-                block.timestamp + 20 minutes, 
+                msg.sender,
+                block.timestamp + 20 minutes,
                 amountOut,
                 tokenAmountOutMinimum
             );
