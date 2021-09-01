@@ -30,7 +30,7 @@ interface ISynthetix {
 
 contract SynthSwap is ISynthSwap {
     
-    bytes32 constant SUSD_CURRENCY_KEY = bytes32(0x7355534400000000000000000000000000000000000000000000000000000000);
+    bytes32 constant SUSD_CURRENCY_KEY = bytes32("sUSD");
     
     ISwapRouter UniswapRouter;
     ISynthetix Synthetix;
