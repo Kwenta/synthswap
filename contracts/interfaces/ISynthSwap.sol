@@ -19,4 +19,9 @@ interface ISynthSwap {
         uint tokenAmountOutMinimum
     ) external returns (uint);
 
+    function swapIntoWith1Inch(
+        bytes calldata payload,
+        bytes32 _destinationSynthCurrencyKey
+    ) external returns (uint);
+
 }
