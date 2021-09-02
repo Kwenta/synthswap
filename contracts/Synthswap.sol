@@ -30,21 +30,22 @@ interface ISynthetix {
 
 contract SynthSwap is ISynthSwap {
     
-    bytes32 constant SUSD_CURRENCY_KEY = bytes32(0x7355534400000000000000000000000000000000000000000000000000000000);
+    bytes32 constant SUSD_CURRENCY_KEY = bytes32('sUSD');
     
     ISwapRouter UniswapRouter;
     ISynthetix Synthetix;
     address sUSD;
     address volumeRewards;
+    address aggregationRouterV3;
 
     event SwapInto(address from, uint amountReceived);
     
-    constructor (address _uniswapRouter, address _synthetix, address _sUSD, address _volumeRewards) {
+    constructor (address _uniswapRouter, address _synthetix, address _sUSD, address _volumeRewards, address _aggregationRouterV3) {
         UniswapRouter = ISwapRouter(_uniswapRouter);
-        // TODO look into address resolver
         Synthetix = ISynthetix(_synthetix);
         sUSD = _sUSD;
         volumeRewards = _volumeRewards;
+        aggregationRouterV3 = _aggregationRouterV3;
     }
     
     function swapInto(
@@ -83,6 +84,43 @@ contract SynthSwap is ISynthSwap {
         emit SwapInto(msg.sender, amountReceived);
         return amountReceived;
         
+    }
+
+    function swapIntoWith1Inch(
+        bytes calldata payload,
+        bytes32 destinationSynthCurrencyKey
+    ) external payable override returns (uint) {
+        
+        // Make sure to set destReceiver to this contract
+        (bool success, bytes memory returnData) = aggregationRouterV3.delegatecall(payload);
+        require(success, _getRevertMsg(returnData));        
+
+        IERC20 SUSD = IERC20(sUSD);
+        uint sUSDBalance = SUSD.balanceOf(address(this));
+        SUSD.approve(address(Synthetix), sUSDBalance);
+
+        uint amountReceived = Synthetix.exchangeWithTrackingForInitiator(
+            SUSD_CURRENCY_KEY, //source currency key
+            sUSDBalance, //source amount
+            destinationSynthCurrencyKey, //destination currency key
+            volumeRewards, // volume rewards address 
+            'KWENTA' //tracking code
+        );
+        
+        emit SwapInto(msg.sender, amountReceived);
+        return amountReceived;
+
+    }
+
+    function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
+        // If the _res length is less than 68, then the transaction failed silently (without a revert message)
+        if (_returnData.length < 68) return 'Transaction reverted silently';
+
+        assembly {
+            // Slice the sighash.
+            _returnData := add(_returnData, 0x04)
+        }
+        return abi.decode(_returnData, (string)); // All that remains is the revert string
     }
     
 }

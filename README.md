@@ -1,15 +1,36 @@
-# Basic Sample Hardhat Project
+# SynthSwap
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts.
+This is a simple zap contract that combines a 1Inch swap with the Synthetix exchanger enabling low slippage swaps into synths. See [ISynthSwap.sol](./contracts/interfaces/ISynthswap.sol) for the current interface.
 
-Try running some of the following tasks:
+## Prepping Local Development
 
-```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
+Install local dependencies:
+```
+npm install
+```
+Provide `ARCHIVE_NODE_URL` in `.env`. [Alchemy](https://alchemyapi.io/) has free archive nodes:
+```
+ARCHIVE_NODE_URL=<YOUR_ARCHIVE_NODE_PROVIDER_HERE>
+```
+
+## Deploy to Mainnet Fork
+
+
+Run a forked network locally:
+
+```
+npm run fork
+```
+
+Deploy Synthswap onto local forked network:
+
+```
+npm run deploy:fork
+```
+
+## Running Tests
+
+To run all tests (unit and integration) under `/test`
+```
 npx hardhat test
-npx hardhat node
-node scripts/sample-script.js
-npx hardhat help
 ```
