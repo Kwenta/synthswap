@@ -34,3 +34,8 @@ To run all tests (unit and integration) under `/test`
 ```
 npx hardhat test
 ```
+
+To run integration tests:
+```
+npm run test:integration
+```
