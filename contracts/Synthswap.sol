@@ -188,5 +188,12 @@ contract SynthSwap is ISynthSwap {
         return amountReceived;
 
     }
+
+    function swapOutOfWith1Inch(
+        bytes calldata payload,
+        address destinationtoken
+    ) external override returns (uint256 amountReceived) {
+        amountReceived = 19;
+    }
     
 }

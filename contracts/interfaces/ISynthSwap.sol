@@ -24,4 +24,9 @@ interface ISynthSwap {
         bytes32 _destinationSynthCurrencyKey
     ) external returns (uint);
 
+    function swapOutOfWith1Inch(
+        bytes calldata payload,
+        address destinationtoken
+    ) external returns (uint);
+
 }
