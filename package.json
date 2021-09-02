@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "fork": "npx hardhat node --fork $(grep ARCHIVE_NODE_URL .env | cut -d '=' -f2)  ",
+    "deploy:fork": "npx hardhat run --network localhost scripts/deploy.ts"
+  },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
