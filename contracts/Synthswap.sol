@@ -31,7 +31,7 @@ interface ISynthetix {
 contract SynthSwap is ISynthSwap {
     using SafeERC20 for IERC20;
     
-    bytes32 constant SUSD_CURRENCY_KEY = bytes32(0x7355534400000000000000000000000000000000000000000000000000000000);
+    bytes32 constant SUSD_CURRENCY_KEY = bytes32('sUSD');
     
     ISwapRouter UniswapRouter;
     ISynthetix Synthetix;
@@ -165,12 +165,12 @@ contract SynthSwap is ISynthSwap {
 
     function swapIntoWith1Inch(
         bytes calldata payload,
-        bytes32 _destinationSynthCurrencyKey
-    ) external override returns (uint) {
-
+        bytes32 destinationSynthCurrencyKey
+    ) external payable override returns (uint) {
+        
         // Make sure to set destReceiver to this contract
-        (bool success, bytes memory returnData) = aggregationRouterV3.call(payload);
-        require(success);
+        (bool success, bytes memory returnData) = aggregationRouterV3.delegatecall(payload);
+        require(success, _getRevertMsg(returnData));        
 
         IERC20 SUSD = IERC20(sUSD);
         uint sUSDBalance = SUSD.balanceOf(address(this));
@@ -179,11 +179,11 @@ contract SynthSwap is ISynthSwap {
         uint amountReceived = Synthetix.exchangeWithTrackingForInitiator(
             SUSD_CURRENCY_KEY, //source currency key
             sUSDBalance, //source amount
-             _destinationSynthCurrencyKey, //destination currency key
+            destinationSynthCurrencyKey, //destination currency key
             volumeRewards, // volume rewards address 
             'KWENTA' //tracking code
         );
-
+        
         emit SwapInto(msg.sender, amountReceived);
         return amountReceived;
 
@@ -192,8 +192,17 @@ contract SynthSwap is ISynthSwap {
     function swapOutOfWith1Inch(
         bytes calldata payload,
         address destinationtoken
-    ) external override returns (uint256 amountReceived) {
-        amountReceived = 19;
+    ) external override returns (uint256 amountReceived) {}
+
+    function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
+        // If the _res length is less than 68, then the transaction failed silently (without a revert message)
+        if (_returnData.length < 68) return 'Transaction reverted silently';
+
+        assembly {
+            // Slice the sighash.
+            _returnData := add(_returnData, 0x04)
+        }
+        return abi.decode(_returnData, (string)); // All that remains is the revert string
     }
     
 }
