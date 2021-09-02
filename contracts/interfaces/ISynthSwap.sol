@@ -14,6 +14,6 @@ interface ISynthSwap {
     function swapIntoWith1Inch(
         bytes calldata payload,
         bytes32 _destinationSynthCurrencyKey
-    ) external returns (uint);
+    ) external payable returns (uint);
 
 }
