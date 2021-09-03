@@ -20,7 +20,6 @@ async function main() {
     // We get the contract to deploy
     const SynthSwap = await hre.ethers.getContractFactory("SynthSwap");
     const synthswap = await SynthSwap.deploy(
-        hre.ethers.constants.AddressZero,
         SYNTHETIX_PROXY,
         SUSD_PROXY,
         hre.ethers.constants.AddressZero,
