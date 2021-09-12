@@ -54,6 +54,7 @@ contract SynthSwap is ISynthSwap {
     function swapOutOf(
         address inputSynth,
         bytes32 inputSynthCurrencyKey,
+        uint256 inputSynthAmount,
         address destinationToken,
         uint256 slippage
     ) external payable override returns (uint) {
@@ -61,6 +62,7 @@ contract SynthSwap is ISynthSwap {
         // Approve the Synthetix router to spend inputSynth.
         IERC20 InputERC20 = IERC20(inputSynth);
         uint synthBalance = InputERC20.balanceOf(address(this));
+        require(synthBalance >= inputSynthAmount, "insufficient synth balance");
         InputERC20.approve(address(Synthetix), synthBalance);
 
         // Swap inputSynth with sUSD by providing both the source and destination currency keys. 

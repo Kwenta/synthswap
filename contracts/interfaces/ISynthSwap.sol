@@ -20,6 +20,7 @@ interface ISynthSwap {
      * @notice Swap out of a specified synth
      * @param inputSynth contract address of a synth to sell
      * @param inputSynthCurrencyKey source synth currency key
+     * @param inputSynthAmount amount of a token to sell
      * @param destinationToken contract address of a token to buy
      * @param slippage limit of price slippage you are willing to accept in percentage
      * @return amount of destination token received from swap
@@ -27,6 +28,7 @@ interface ISynthSwap {
     function swapOutOf(
         address inputSynth,
         bytes32 inputSynthCurrencyKey,
+        uint256 inputSynthAmount,
         address destinationToken,
         uint256 slippage
     ) external payable returns (uint);
