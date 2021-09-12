@@ -83,6 +83,42 @@ contract SynthSwap is ISynthSwap {
         return amountReceived;
     }
 
+    function swapOnOneInch(
+        address fromToken,
+        address toToken,
+        uint256 originAmount,
+        uint256 minTargetAmount,
+        uint256[] memory exchangeDistribution
+    ) internal {
+        bytes memory _data = abi.encodeWithSignature(
+            "swap(address,address,uint256,uint256,uint256[],uint256)",
+            fromToken,
+            toToken,
+            originAmount,
+            // 99% of the minTargetAmount results in 1% price/slippage buffer
+            ((minTargetAmount * 99) / 100),
+            exchangeDistribution,
+            0
+        );
+        invoke(aggregationRouterV3, _data);
+    }
+
+    /**
+    * @notice Performs a generic transaction.
+    * @param _target The address for the transaction.
+    * @param _data The data of the transaction.
+    */
+    function invoke(address _target, bytes memory _data) internal returns (bytes memory) {
+        // External contracts can be compiled with different Solidity versions
+        // which can cause "revert without reason" when called through,
+        // for example, a standard IERC20 ABI compiled on the latest version.
+        // This low-level call avoids that issue.
+
+        (bool success, bytes memory returnData) = _target.delegatecall(_data);
+        require(success, _getRevertMsg(returnData));
+        return returnData;
+    }
+
     function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
         if (_returnData.length < 68) return 'Transaction reverted silently';
@@ -93,4 +129,5 @@ contract SynthSwap is ISynthSwap {
         }
         return abi.decode(_returnData, (string)); // All that remains is the revert string
     }
+
 }
