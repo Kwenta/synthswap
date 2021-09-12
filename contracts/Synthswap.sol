@@ -52,18 +52,18 @@ contract SynthSwap is ISynthSwap {
     }
 
     function swapOutOf(
-        bytes calldata payload,
         address inputSynth,
         bytes32 inputSynthCurrencyKey,
-        address destinationToken
+        address destinationToken,
+        uint256 slippage
     ) external payable override returns (uint) {
 
-        // Approve the Synthetix router to spend `inputSynth`.
+        // Approve the Synthetix router to spend inputSynth.
         IERC20 InputERC20 = IERC20(inputSynth);
         uint synthBalance = InputERC20.balanceOf(address(this));
         InputERC20.approve(address(Synthetix), synthBalance);
 
-        // Swap `inputSynth` with sUSD by providing both the source and destination currency keys. 
+        // Swap inputSynth with sUSD by providing both the source and destination currency keys. 
         Synthetix.exchangeWithTrackingForInitiator(
             inputSynthCurrencyKey, // source currency key
             synthBalance, // source amount
@@ -72,42 +72,51 @@ contract SynthSwap is ISynthSwap {
             'KWENTA' // tracking code
         );
 
-        // Make sure to set destReceiver to this contract
-        (bool success, bytes memory returnData) = aggregationRouterV3.delegatecall(payload);
-        require(success, _getRevertMsg(returnData));
-        require(false, "stop");
+        // Approve the 1inch router to spend sUSD.
+        uint sUSDBalance = sUSD.balanceOf(address(this));
+        sUSD.approve(aggregationRouterV3, sUSDBalance);
 
+        // Swap sUSD with destinationToken
+        swapOnOneInch(address(sUSD), destinationToken, sUSDBalance, address(this), slippage);
         uint amountReceived = IERC20(destinationToken).balanceOf(address(this));
+
+        sUSD.transfer(msg.sender, amountReceived);
 
         emit SwapOutOf(msg.sender, amountReceived);
         return amountReceived;
     }
 
+    /**
+     * @notice Performs a token swap via 1inch (https://docs.1inch.io/api/quote-swap).
+     * @param fromTokenAddress contract address of a token to sell
+     * @param toTokenAddress contract address of a token to buy
+     * @param amount amount of a token to sell
+     * @param fromAddress address of a seller
+     * @param slippage limit of price slippage you are willing to accept in percentage
+     */
     function swapOnOneInch(
-        address fromToken,
-        address toToken,
-        uint256 originAmount,
-        uint256 minTargetAmount,
-        uint256[] memory exchangeDistribution
+        address fromTokenAddress,
+        address toTokenAddress,
+        uint256 amount,
+        address fromAddress,
+        uint256 slippage
     ) internal {
         bytes memory _data = abi.encodeWithSignature(
-            "swap(address,address,uint256,uint256,uint256[],uint256)",
-            fromToken,
-            toToken,
-            originAmount,
-            // 99% of the minTargetAmount results in 1% price/slippage buffer
-            ((minTargetAmount * 99) / 100),
-            exchangeDistribution,
-            0
+            "swap(address,address,uint256,address,uint256)",
+            fromTokenAddress,
+            toTokenAddress,
+            amount,
+            fromAddress,
+            slippage
         );
         invoke(aggregationRouterV3, _data);
     }
 
     /**
-    * @notice Performs a generic transaction.
-    * @param _target The address for the transaction.
-    * @param _data The data of the transaction.
-    */
+     * @notice Performs a generic transaction.
+     * @param _target The address for the transaction.
+     * @param _data The data of the transaction.
+     */
     function invoke(address _target, bytes memory _data) internal returns (bytes memory) {
         // External contracts can be compiled with different Solidity versions
         // which can cause "revert without reason" when called through,

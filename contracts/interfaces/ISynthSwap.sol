@@ -18,15 +18,16 @@ interface ISynthSwap {
 
     /** 
      * @notice Swap out of a specified synth
-     * @param payload is the transaction data returned by the 1inch API
-     * ENSURE: fromAddress is set to caller of this function and destReceiver is set to the Synthswap contract 
-     * @param destinationToken is the address of a ERC20 token
+     * @param inputSynth contract address of a synth to sell
+     * @param inputSynthCurrencyKey source synth currency key
+     * @param destinationToken contract address of a token to buy
+     * @param slippage limit of price slippage you are willing to accept in percentage
      * @return amount of destination token received from swap
      */
     function swapOutOf(
-        bytes calldata payload,
         address inputSynth,
         bytes32 inputSynthCurrencyKey,
-        address destinationToken
+        address destinationToken,
+        uint256 slippage
     ) external payable returns (uint);
 }
