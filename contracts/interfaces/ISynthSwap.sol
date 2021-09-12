@@ -6,14 +6,17 @@ pragma solidity ^0.8.0;
 interface ISynthSwap {
     /** 
      * @notice Swap into a specified synth
-     * @param payload is the transaction data returned by the 1inch API
-     * ENSURE: fromAddress is set to caller of this function and destReceiver is set to the Synthswap contract 
-     * @param destinationSynthCurrencyKey is the bytes32 representation of a Synthetix currency key
+     * @param inputTokenAddress contract address of a token to sell
+     * @param inputTokenAmount amount of a token to sell
+     * @param destinationSynthCurrencyKey sourdestinationce synth currency key
+     * @param slippage limit of price slippage you are willing to accept in percentage
      * @return amount of destination synth received from swap
      */
     function swapInto(
-        bytes calldata payload,
-        bytes32 destinationSynthCurrencyKey
+        address inputTokenAddress,
+        uint256 inputTokenAmount,
+        bytes32 destinationSynthCurrencyKey,
+        uint256 slippage
     ) external payable returns (uint);
 
     /** 

@@ -25,14 +25,20 @@ contract SynthSwap is ISynthSwap {
     }
 
     function swapInto(
-        bytes calldata payload,
-        bytes32 destinationSynthCurrencyKey
+        address inputTokenAddress,
+        uint256 inputTokenAmount,
+        bytes32 destinationSynthCurrencyKey,
+        uint256 slippage
     ) external payable override returns (uint) {
 
-        // Make sure to set destReceiver to this contract
-        (bool success, bytes memory returnData) = aggregationRouterV3.delegatecall(payload);
-        require(success, _getRevertMsg(returnData));
-        require(false, "stop");
+        // Approve the 1inch router to spend sUSD.
+        IERC20 InputERC20 = IERC20(inputTokenAddress);
+        uint tokenBalance = InputERC20.balanceOf(address(this));
+        require(tokenBalance >= inputTokenAmount, "insufficient token balance");
+        InputERC20.approve(aggregationRouterV3, tokenBalance);
+
+        // Swap InputERC20 with sUSD
+        swapOnOneInch(inputTokenAddress, address(sUSD), tokenBalance, address(this), slippage);
 
         // Approve the Synthetix router to spend sUSD.
         uint sUSDBalance = sUSD.balanceOf(address(this));
@@ -94,7 +100,7 @@ contract SynthSwap is ISynthSwap {
      * @param toTokenAddress contract address of a token to buy
      * @param amount amount of a token to sell
      * @param fromAddress address of a seller
-     * @param slippage limit of price slippage you are willing to accept in percentage
+     * @param slippage limit of price slippage you are willing to accept in percentage [0-50]
      */
     function swapOnOneInch(
         address fromTokenAddress,
