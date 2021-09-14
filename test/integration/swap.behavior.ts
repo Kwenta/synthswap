@@ -38,7 +38,6 @@ describe("Integration: Test Synthswap.sol", function () {
         //Deploy
         const SynthSwap = await ethers.getContractFactory("SynthSwap");
         const synthswap = await SynthSwap.deploy(
-            ethers.constants.AddressZero,
             SYNTHETIX_PROXY,
             SUSD_PROXY,
             ethers.constants.AddressZero,
@@ -59,7 +58,7 @@ describe("Integration: Test Synthswap.sol", function () {
 
         await synthswap
             .connect(signer) // Call swap from TEST_ADDRESS
-            .swapIntoWith1Inch(
+            .swapInto(
                 TRANSACTION_PAYLOAD_1INCH_WITH_DEST_AS_CONTRACT,
                 SETH_BYTES32,
                 {
