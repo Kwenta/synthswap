@@ -8,7 +8,7 @@ interface ISynthSwap {
      * @notice Swap into a specified synth
      * @param inputTokenAddress contract address of a token to sell
      * @param inputTokenAmount amount of a token to sell
-     * @param destinationSynthCurrencyKey sourdestinationce synth currency key
+     * @param destinationSynthCurrencyKey destination synth currency key
      * @param slippage limit of price slippage you are willing to accept in percentage
      * @return amount of destination synth received from swap
      */
@@ -33,6 +33,19 @@ interface ISynthSwap {
         bytes32 inputSynthCurrencyKey,
         uint256 inputSynthAmount,
         address destinationToken,
+        uint256 slippage
+    ) external payable returns (uint);
+
+    /** 
+     * @notice Swap into a specified synth
+     * @param amount amount of a ETH to sell
+     * @param destinationSynthCurrencyKey destination synth currency key
+     * @param slippage limit of price slippage you are willing to accept in percentage
+     * @return amount of destination synth received from swap
+     */
+    function swapIntoWithETH(
+        uint256 amount,
+        bytes32 destinationSynthCurrencyKey,
         uint256 slippage
     ) external payable returns (uint);
 }
