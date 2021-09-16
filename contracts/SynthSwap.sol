@@ -20,6 +20,17 @@ contract SynthSwap is ISynthSwap {
                     
     event SwapInto(address from, uint amountReceived);
     event SwapOutOf(address from, uint amountReceived);
+
+    struct OneInchSwapDescription {
+        IERC20 srcToken;
+        IERC20 dstToken;
+        address srcReceiver;
+        address dstReceiver;
+        uint256 amount;
+        uint256 minReturnAmount;
+        uint256 flags;
+        bytes permit;
+    }
     
     constructor (
         address _synthetix, 
@@ -40,25 +51,26 @@ contract SynthSwap is ISynthSwap {
         address inputTokenAddress,
         uint256 inputTokenAmount,
         bytes32 destinationSynthCurrencyKey,
-        uint256 slippage
+        uint minOut, 
+        bytes calldata _data
     ) external payable override returns (uint) {
-        // Approve the 1inch router to spend InputERC20
+
+        // Prevent Griefing
         IERC20 InputERC20 = IERC20(inputTokenAddress);
         uint tokenBalance = InputERC20.balanceOf(address(this));
         require(tokenBalance >= inputTokenAmount, "incorrect token balance");
-        InputERC20.approve(aggregationRouterV3, tokenBalance);
 
         // Swap InputERC20 with sUSD
-        swapOnOneInch(inputTokenAddress, address(sUSD), tokenBalance, address(this), slippage);
+        (uint amountOutputToken, IERC20 outputToken) = swapOnOneInch(minOut, _data);
+        require(outputToken == IERC20(sUSD));
 
         // Approve the Synthetix router to spend sUSD
-        uint sUSDBalance = sUSD.balanceOf(address(this));
-        sUSD.approve(address(Synthetix), sUSDBalance);
+        outputToken.approve(address(Synthetix), amountOutputToken);
 
         // Swap sUSD with destination synth by providing both the source and destination currency keys
         uint amountReceived = Synthetix.exchangeWithTrackingForInitiator(
             SUSD_CURRENCY_KEY, // hardcode source currency key
-            sUSDBalance, // source amount
+            amountOutputToken, // source amount
             destinationSynthCurrencyKey, // destination currency key
             volumeRewards, // volume rewards address
             'KWENTA' // tracking code
@@ -70,31 +82,31 @@ contract SynthSwap is ISynthSwap {
 
     /// @inheritdoc ISynthSwap
     function swapIntoWithETH(
-        uint256 amount,
         bytes32 destinationSynthCurrencyKey,
-        uint256 slippage
+        uint minOut, 
+        bytes calldata _data
     ) external payable override returns (uint) {
+        
         // Wrap ETH and transfer WETH to this address
-        IWETH(WETH).deposit{value: amount}();
+        IWETH(WETH).deposit{value: msg.value}();
         IERC20 InputERC20 = IERC20(WETH);
-        assert(InputERC20.transfer(address(this), amount));
+        assert(InputERC20.transfer(address(this), msg.value));
 
-        // Approve the 1inch router to spend WETH
+        // Prevent Griefing
         uint tokenBalance = InputERC20.balanceOf(address(this));
-        require(tokenBalance >= amount, "incorrect token balance");
-        InputERC20.approve(aggregationRouterV3, tokenBalance);
+        require(tokenBalance >= msg.value, "incorrect token balance");
 
         // Swap WETH with sUSD
-        swapOnOneInch(WETH, address(sUSD), tokenBalance, address(this), slippage);
+        (uint amountOutputToken, IERC20 outputToken) = swapOnOneInch(minOut, _data);
+        require(outputToken == IERC20(sUSD));
 
         // Approve the Synthetix router to spend sUSD
-        uint sUSDBalance = sUSD.balanceOf(address(this));
-        sUSD.approve(address(Synthetix), sUSDBalance);
+        outputToken.approve(address(Synthetix), amountOutputToken);
 
         // Swap sUSD with destination synth by providing both the source and destination currency keys
         uint amountReceived = Synthetix.exchangeWithTrackingForInitiator(
             SUSD_CURRENCY_KEY, // hardcode source currency key
-            sUSDBalance, // source amount
+            amountOutputToken, // source amount
             destinationSynthCurrencyKey, // destination currency key
             volumeRewards, // volume rewards address
             'KWENTA' // tracking code
@@ -109,9 +121,10 @@ contract SynthSwap is ISynthSwap {
         address inputSynth,
         bytes32 inputSynthCurrencyKey,
         uint256 inputSynthAmount,
-        address destinationToken,
-        uint256 slippage
+        uint minOut, 
+        bytes calldata _data
     ) external payable override returns (uint) {
+
         // Approve the Synthetix router to spend inputSynth
         IERC20 InputERC20 = IERC20(inputSynth);
         uint synthBalance = InputERC20.balanceOf(address(this));
@@ -127,44 +140,33 @@ contract SynthSwap is ISynthSwap {
             'KWENTA' // tracking code
         );
 
-        // Approve the 1inch router to spend sUSD
-        uint sUSDBalance = sUSD.balanceOf(address(this));
-        sUSD.approve(aggregationRouterV3, sUSDBalance);
+        // Swap sUSD with output token via 1inch
+        (uint amountReceived, IERC20 outputToken) = swapOnOneInch(minOut, _data);
 
-        // Swap sUSD with destinationToken
-        swapOnOneInch(address(sUSD), destinationToken, sUSDBalance, address(this), slippage);
-        uint amountReceived = IERC20(destinationToken).balanceOf(address(this));
-
-        assert(sUSD.transfer(msg.sender, amountReceived));
+        // transfer amountReceived of outputToken to contract caller
+        assert(outputToken.transfer(msg.sender, amountReceived));
 
         emit SwapOutOf(msg.sender, amountReceived);
         return amountReceived;
     }
 
     /**
-     * @notice Performs a token swap via 1inch (https://docs.1inch.io/api/quote-swap).
-     * @param fromTokenAddress contract address of a token to sell
-     * @param toTokenAddress contract address of a token to buy
-     * @param amount amount of a token to sell
-     * @param fromAddress address of a seller
-     * @param slippage limit of price slippage you are willing to accept in percentage [0-50]
+     * @notice execute a swap via 1inch
+     * @param minOut minimum expected return, else revert transaction
+     * @param _data encoded call to 1inch aggregation router V3 to execute swap
+     * @return amount of destination token received from swap
      */
     function swapOnOneInch(
-        address fromTokenAddress,
-        address toTokenAddress,
-        uint256 amount,
-        address fromAddress,
-        uint256 slippage
-    ) internal {
-        bytes memory _data = abi.encodeWithSignature(
-            "swap(address,address,uint256,address,uint256)",
-            fromTokenAddress,
-            toTokenAddress,
-            amount,
-            fromAddress,
-            slippage
-        );
+        uint minOut, 
+        bytes calldata _data
+    ) internal returns (uint, IERC20) {
+        (address _c, OneInchSwapDescription memory description, bytes memory _d) = abi.decode(_data[4:], (address, OneInchSwapDescription, bytes));
+
+        IERC20(description.srcToken).transferFrom(msg.sender, address(this), description.amount);
+        IERC20(description.srcToken).approve(aggregationRouterV3, description.amount);
+
         invoke(aggregationRouterV3, _data);
+        return (IERC20(description.dstToken).balanceOf(address(this)), description.dstToken);
     }
 
     /**
@@ -182,6 +184,7 @@ contract SynthSwap is ISynthSwap {
         require(success, _getRevertMsg(returnData));
         return returnData;
     }
+
 
     function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
