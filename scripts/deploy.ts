@@ -5,9 +5,10 @@
 // Runtime Environment's members available in the global scope.
 const hre = require("hardhat");
 
-const SYNTHETIX_PROXY = "0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F";
-const SUSD_PROXY = "0x57Ab1E02fEE23774580C119740129eAC7081e9D3";
-const AGGREGATION_ROUTER_V3 = "0x11111112542D85B3EF69AE05771c2dCCff4fAa26";
+const SYNTHETIX_PROXY =         "0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F";
+const SUSD_PROXY =              "0x57Ab1E02fEE23774580C119740129eAC7081e9D3";
+const AGGREGATION_ROUTER_V3 =   "0x11111112542D85B3EF69AE05771c2dCCff4fAa26";
+const WETH =                    "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 
 async function main() {
     // Hardhat always runs the compile task when running scripts with its command
@@ -23,7 +24,8 @@ async function main() {
         SYNTHETIX_PROXY,
         SUSD_PROXY,
         hre.ethers.constants.AddressZero,
-        AGGREGATION_ROUTER_V3
+        AGGREGATION_ROUTER_V3,
+        WETH
     );
 
     await synthswap.deployed();
