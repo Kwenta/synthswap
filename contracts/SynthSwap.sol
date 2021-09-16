@@ -174,6 +174,11 @@ contract SynthSwap is ISynthSwap {
         return (returnAmount, description.dstToken);
     }
 
+    /**
+     * @notice execute a swap via 1inch
+     * @param _returnData revert associated data
+     * @return revert message
+     */
     function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
         if (_returnData.length < 68) return 'Transaction reverted silently';
