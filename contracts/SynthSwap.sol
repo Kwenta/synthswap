@@ -160,31 +160,19 @@ contract SynthSwap is ISynthSwap {
         uint minOut, 
         bytes calldata _data
     ) internal returns (uint, IERC20) {
-        (address _c, OneInchSwapDescription memory description, bytes memory _d) = abi.decode(_data[4:], (address, OneInchSwapDescription, bytes));
+        (,OneInchSwapDescription memory description,) = abi.decode(_data[4:], (address, OneInchSwapDescription, bytes));
 
         IERC20(description.srcToken).transferFrom(msg.sender, address(this), description.amount);
         IERC20(description.srcToken).approve(aggregationRouterV3, description.amount);
 
-        invoke(aggregationRouterV3, _data);
-        return (IERC20(description.dstToken).balanceOf(address(this)), description.dstToken);
-    }
+        (bool success, bytes memory returnData) = aggregationRouterV3.call(_data);
 
-    /**
-     * @notice Performs a generic transaction
-     * @param _target The address for the transaction
-     * @param _data The data of the transaction
-     */
-    function invoke(address _target, bytes memory _data) internal returns (bytes memory) {
-        // External contracts can be compiled with different Solidity versions
-        // which can cause "revert without reason" when called through,
-        // for example, a standard IERC20 ABI compiled on the latest version.
-        // This low-level call avoids that issue.
-
-        (bool success, bytes memory returnData) = _target.call(_data);
         require(success, _getRevertMsg(returnData));
-        return returnData;
-    }
+        (uint returnAmount,) = abi.decode(_data, (uint, uint));
+        require(returnAmount >= minOut);
 
+        return (returnAmount, description.dstToken);
+    }
 
     function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
