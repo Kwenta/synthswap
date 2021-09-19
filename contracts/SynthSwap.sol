@@ -160,12 +160,12 @@ contract SynthSwap is ISynthSwap {
         uint minOut, 
         bytes calldata _data
     ) internal returns (uint, IERC20) {
-        (,OneInchSwapDescription memory description,) = abi.decode(_data[4:], (address, OneInchSwapDescription, bytes));
+        (, OneInchSwapDescription memory description, ) = abi.decode(_data[4:], (address, OneInchSwapDescription, bytes));
 
         IERC20(description.srcToken).transferFrom(msg.sender, address(this), description.amount);
         IERC20(description.srcToken).approve(aggregationRouterV3, description.amount);
 
-        (bool success, bytes memory returnData) = aggregationRouterV3.call(_data);
+        (bool success, bytes memory returnData) = address(aggregationRouterV3).call(_data);
 
         require(success, _getRevertMsg(returnData));
         (uint returnAmount,) = abi.decode(_data, (uint, uint));
