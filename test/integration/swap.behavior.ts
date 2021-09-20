@@ -55,9 +55,9 @@ describe("Integration: Test SynthSwap.sol", function () {
                 + "/swap?fromTokenAddress=" + WETH
                 + "&toTokenAddress=" + SUSD
                 + "&amount=" + amount
-                + "&fromAddress=" + TEST_ADDRESS
+                + "&fromAddress=" + synthswap.address
                 + "&slippage=" + slippage
-                + "&destReceiver= " + TEST_ADDRESS
+                + "&destReceiver= " + synthswap.address
                 + "disableEstimate=true'";
 
         // Resulting tx.data from above API call

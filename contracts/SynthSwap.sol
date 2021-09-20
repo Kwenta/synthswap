@@ -90,7 +90,6 @@ contract SynthSwap is ISynthSwap {
         // Wrap ETH and transfer WETH to this address
         IWETH(WETH).deposit{value: msg.value}();
         IERC20 InputERC20 = IERC20(WETH);
-        assert(InputERC20.transfer(address(this), msg.value));
 
         // Prevent Griefing
         uint tokenBalance = InputERC20.balanceOf(address(this));
