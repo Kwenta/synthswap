@@ -46,9 +46,9 @@ describe("Integration: Test SynthSwap.sol", function () {
         await synthswap.deployed();
 
         const signer = await ethers.getSigner(TEST_ADDRESS);
-        const chain_id = "";
+        const chain_id = "1";
         const amount = "10000000000000000";
-        const slippage = 1;
+        const slippage = 3;
 
         const endpoint_1inch = 
                 "https://api.1inch.exchange/v3.0/" + chain_id 
