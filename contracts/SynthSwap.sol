@@ -62,7 +62,7 @@ contract SynthSwap is ISynthSwap {
 
         // Swap InputERC20 with sUSD
         (uint amountOutputToken, IERC20 outputToken) = swapOnOneInch(minOut, _data);
-        require(outputToken == IERC20(sUSD));
+        require(outputToken == sUSD);
 
         // Approve the Synthetix router to spend sUSD
         outputToken.approve(address(Synthetix), amountOutputToken);
@@ -97,7 +97,7 @@ contract SynthSwap is ISynthSwap {
 
         // Swap WETH with sUSD
         (uint amountOutputToken, IERC20 outputToken) = swapOnOneInch(minOut, _data);
-        require(outputToken == IERC20(sUSD));
+        require(outputToken == sUSD);
 
         // Approve the Synthetix router to spend sUSD
         outputToken.approve(address(Synthetix), amountOutputToken);
