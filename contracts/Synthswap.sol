@@ -21,19 +21,19 @@ contract SynthSwap is ISynthSwap {
     }
 
     function swapInto(
-        bytes calldata payload,
+        bytes calldata _data,
         bytes32 destinationSynthCurrencyKey
     ) external payable override returns (uint) {
-        // Make sure to set destReceiver to this contract
-        (bool success, bytes memory returnData) = aggregationRouterV3.delegatecall(payload);
-        require(success, _getRevertMsg(returnData));
-        require(false, "stop");
-        uint sUSDBalance = sUSD.balanceOf(address(this));
-        sUSD.approve(address(Synthetix), sUSDBalance);
 
+        // Make sure to set destReceiver to this contract
+        (bool success, bytes memory returnData) = aggregationRouterV3.delegatecall(_data);
+        require(success, _getRevertMsg(returnData));
+        (uint sUSDAmountOut,) = abi.decode(returnData, (uint, uint));
+        
+        sUSD.approve(address(Synthetix), sUSDAmountOut);
         uint amountReceived = Synthetix.exchangeWithTrackingForInitiator(
             'sUSD', // hardcode source currency key
-            sUSDBalance, //source amount
+            sUSDAmountOut, //source amount
             destinationSynthCurrencyKey,
             volumeRewards, 
             'KWENTA' //tracking code
