@@ -38,7 +38,8 @@ describe("SynthSwap", function () {
                 WETH,           // address inputTokenAddress
                 1,              // uint256 inputTokenAmount
                 SETH_BYTES32,   // bytes32 destinationSynthCurrencyKey
-                3               // uint256 slippage [0-50]
+                3,              // uint256 slippage [0-50]
+                "0x0000"        // todo
             )
         );
 
@@ -49,7 +50,8 @@ describe("SynthSwap", function () {
                 SETH_BYTES32,   // bytes32 inputSynthCurrencyKey
                 1,              // uint256 inputSynthAmount
                 WETH,           // address destinationToken
-                3               // uint256 slippage
+                3,              // uint256 slippage
+                "0x0000"        // todo
             )
         );
 

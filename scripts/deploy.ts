@@ -30,7 +30,7 @@ async function main() {
 
     await synthswap.deployed();
 
-    console.log("Synthswap deployed to:", synthswap.address);
+    console.log("SynthSwap deployed to:", synthswap.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

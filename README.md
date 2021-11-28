@@ -22,7 +22,7 @@ Run a forked network locally:
 npm run fork
 ```
 
-Deploy Synthswap onto local forked network:
+Deploy SynthSwap onto local forked network:
 
 ```
 npm run deploy:fork
