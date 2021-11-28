@@ -39,6 +39,7 @@ interface ISynthSwap {
      * @param inputSynth contract address of a synth to sell
      * @param inputSynthCurrencyKey source synth currency key
      * @param inputSynthAmount amount of a token to sell
+     * @param outputToken contract address of destination token 
      * @param minOut minimum expected return, else revert transaction
      * @param _data encoded call to 1inch aggregation router V3 to execute swap
      * @return amount of destination token received from swap
@@ -47,6 +48,7 @@ interface ISynthSwap {
         address inputSynth,
         bytes32 inputSynthCurrencyKey,
         uint256 inputSynthAmount,
+        address outputToken,
         uint minOut, 
         bytes calldata _data
     ) external payable returns (uint);
