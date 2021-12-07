@@ -1,6 +1,6 @@
 # SynthSwap
 
-This is a simple zap contract that combines a 1Inch swap with the Synthetix exchanger enabling low slippage swaps into synths. See [ISynthSwap.sol](contracts/interfaces/ISynthSwap.sol) for the current interface.
+This is a simple utlity contract that combines a 1Inch swap with the Synthetix exchanger enabling low slippage swaps into synths. See [ISynthSwap.sol](contracts/interfaces/ISynthSwap.sol) for the current interface.
 
 ## Prepping Local Development
 
