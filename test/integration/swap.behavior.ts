@@ -91,6 +91,10 @@ describe("Integration: Test Synthswap.sol", function () {
         const WETH = new ethers.Contract(WETH_ADDRESS, IERC20ABI, mockProvider);
         await WETH.connect(signer).approve(AGGREGATION_ROUTER_V4, ethers.BigNumber.from("1000000000000000000"));
 
+        // confirm allowance
+        const allowance = await WETH.allowance(signer.address, AGGREGATION_ROUTER_V4);
+        expect(allowance).to.equal(ethers.BigNumber.from("1000000000000000000").toString());
+
         // Replace 0xaaa... placeholder from generated payload with deployed SynsthSwap address.
         // This is because when generating the 1inch payload we need to specify a destination receiver address,
         // which is our SynthSwap contract, and this is not known ahead of time.
