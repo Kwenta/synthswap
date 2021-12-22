@@ -53,7 +53,7 @@ describe("Integration: Test Synthswap.sol", function () {
             params: [TEST_ADDRESS, ethers.utils.parseEther("10").toHexString()],
         });
 
-        const router = await ethers.getContractFactory("AggregationRouterV3");
+        const router = await ethers.getContractFactory("AggregationRouterV4");
         await network.provider.send("hardhat_setCode", [
             "0x1111111254760f7ab3f16433eea9304126dcd199",
             router.bytecode,
