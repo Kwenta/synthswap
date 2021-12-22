@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// constructor variables
+// constructor variables 
 const SYNTHETIX_PROXY = "0x8700dAec35aF8Ff88c16BdF0418774CB3D7599B4"; // ProxyERC20
 const SUSD_PROXY = "0x8c6f28f2F1A3C87F0f938b96d27520d9751ec8d9"; // ProxyERC20sUSD
 const VOLUME_REWARDS = ethers.constants.AddressZero;
@@ -52,6 +52,12 @@ describe("Integration: Test Synthswap.sol", function () {
             method: "hardhat_setBalance",
             params: [TEST_ADDRESS, ethers.utils.parseEther("10").toHexString()],
         });
+
+        const router = await ethers.getContractFactory("AggregationRouterV3");
+        await network.provider.send("hardhat_setCode", [
+            "0x1111111254760f7ab3f16433eea9304126dcd199",
+            router.bytecode,
+        ]);
     });
 
     it("Test SynthSwap deployment", async () => {
@@ -67,8 +73,8 @@ describe("Integration: Test Synthswap.sol", function () {
         expect(synthswap.address).to.exist;
     });
 
-    it("Test swap ETH into sETH", async () => {
-        // ETH -(1inchAggregator)-> sUSD -(Synthetix)-> sETH
+    it("Test swap WETH into sETH", async () => {
+        // WETH -(1inchAggregator)-> sUSD -(Synthetix)-> sETH
         const SynthSwap = await ethers.getContractFactory("SynthSwap");
         const synthswap = await SynthSwap.deploy(
             SYNTHETIX_PROXY,
@@ -79,7 +85,7 @@ describe("Integration: Test Synthswap.sol", function () {
         );
         await synthswap.deployed();
 
-        const IERC20ABI = (await artifacts.readArtifact("IERC20")).abi;
+        const IERC20ABI = (await artifacts.readArtifact("contracts/interfaces/IERC20.sol:IERC20")).abi;
         const mockProvider = waffle.provider;
         const signer = await ethers.getSigner(TEST_ADDRESS);
 
@@ -137,7 +143,7 @@ describe("Integration: Test Synthswap.sol", function () {
         );
         await synthswap.deployed();
 
-        const IERC20ABI = (await artifacts.readArtifact("IERC20")).abi;
+        const IERC20ABI = (await artifacts.readArtifact("contracts/interfaces/IERC20.sol")).abi;
         const mockProvider = waffle.provider;
         const signer = await ethers.getSigner(TEST_ADDRESS);
         
