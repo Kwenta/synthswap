@@ -4,7 +4,7 @@ Synthswap is a simple utlity contract that combines a 1Inch swap with the Synthe
 
 See [ISynthSwap.sol](contracts/interfaces/ISynthSwap.sol) for the current interface.
 
-## Rational
+## Rationale
  
 At the time of writing this there are no single step methods for swapping from any ERC20 to any synth on Optimistic layer 2. The best way for a trader to begin trading on Kwenta is to swap their tokens for sUSD on Uniswap (or 1inch) and then swap their sUSD for their desired synth on Kwenta.
 
