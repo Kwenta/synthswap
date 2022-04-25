@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0; // https://consensys.github.io/smart-contract-best-practices/recommendations/#lock-pragmas-to-specific-compiler-version
+pragma solidity ^0.8.0;
 
 import "./interfaces/ISynthSwap.sol";
 import "./interfaces/IERC20.sol";
@@ -11,8 +11,9 @@ contract SynthSwap is ISynthSwap {
     using SafeERC20 for IERC20;
 
     ISynthetix synthetix;
-    IERC20 sUSD;
     IAddressResolver addressResolver;
+    IERC20 sUSD;
+
     address volumeRewards;
     address aggregationRouterV4;
 
@@ -38,8 +39,8 @@ contract SynthSwap is ISynthSwap {
         bytes32 destinationSynthCurrencyKey,
         bytes calldata _data
     ) external payable override returns (uint) {
-        // Make sure to set destReceiver to this contract
-        (bool success, bytes memory returnData) = aggregationRouterV4.delegatecall(_data);
+        // make sure to set destReceiver to this contract
+        (bool success, bytes memory returnData) = aggregationRouterV4.call(_data);
         require(success, _getRevertMsg(returnData));
         (uint sUSDAmountOut,) = abi.decode(returnData, (uint, uint));
         
@@ -60,14 +61,14 @@ contract SynthSwap is ISynthSwap {
     /// @inheritdoc ISynthSwap
     function swapOutOf(
         bytes32 sourceSynthCurrencyKey,
-        uint sourceAmount, // Make sure synthetix is approved to use this amount
+        uint sourceAmount,
         bytes calldata _data
     ) external override returns (uint) {
         IERC20 sourceSynth = IERC20(addressResolver.getSynth(sourceSynthCurrencyKey));
         sourceSynth.safeTransferFrom(msg.sender, address(this), sourceAmount);
         sourceSynth.safeApprove(address(synthetix), sourceAmount);
 
-        // We don't use ForInitiator here because we want the sUSD returned to this contract
+        // we don't use ForInitiator here because we want the sUSD returned to this contract
         uint sUSDAmountOut = synthetix.exchangeWithTracking(
             sourceSynthCurrencyKey, // source currency key
             sourceAmount, // source amount
@@ -78,7 +79,7 @@ contract SynthSwap is ISynthSwap {
 
         sUSD.safeApprove(address(aggregationRouterV4), sUSDAmountOut);
 
-        // Make sure to set destReceiver to caller
+        // make sure to set destReceiver to caller
         (bool success, bytes memory returnData) = aggregationRouterV4.call(_data);
         require(success, _getRevertMsg(returnData));
         (uint amountReceived,) = abi.decode(returnData, (uint, uint));

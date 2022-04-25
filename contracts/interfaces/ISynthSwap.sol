@@ -17,7 +17,8 @@ interface ISynthSwap {
     ) external payable returns (uint);
 
     /** 
-     * @notice Swap out of a specified synth
+     * @notice swap out of a specified synth
+     * @dev make sure synthetix is approved to spend sourceAmount
      * @param sourceSynthCurrencyKey is the bytes32 representation of a Synthetix currency key
      * @param sourceAmount is the amount of sourceSynth to swap out of
      * @param _data is the transaction data returned by the 1inch API
