@@ -39,8 +39,9 @@ contract SynthSwap is ISynthSwap {
         bytes32 destinationSynthCurrencyKey,
         bytes calldata _data
     ) external payable override returns (uint) {
+
         // make sure to set destReceiver to this contract
-        (bool success, bytes memory returnData) = aggregationRouterV4.call(_data);
+        (bool success, bytes memory returnData) = aggregationRouterV4.call{value: msg.value}(_data);
         require(success, _getRevertMsg(returnData));
         (uint sUSDAmountOut,) = abi.decode(returnData, (uint, uint));
         
@@ -64,6 +65,7 @@ contract SynthSwap is ISynthSwap {
         uint sourceAmount,
         bytes calldata _data
     ) external override returns (uint) {
+
         IERC20 sourceSynth = IERC20(addressResolver.getSynth(sourceSynthCurrencyKey));
         sourceSynth.safeTransferFrom(msg.sender, address(this), sourceAmount);
         sourceSynth.safeApprove(address(synthetix), sourceAmount);
