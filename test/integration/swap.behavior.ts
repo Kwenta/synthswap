@@ -70,6 +70,15 @@ describe("Integration: Test Synthswap.sol", function () {
         );
         await synthswap.deployed();
 
+        // Replace 0xaaa... placeholder from generated payload with deployed SynsthSwap address.
+        // This is because when generating the 1inch payload we need to specify a destination receiver address,
+        // which is our SynthSwap contract, and this is not known ahead of time.
+        const PAYLOAD =
+            TRANSACTION_PAYLOAD_1INCH_ETH_TO_SUSD.replace(
+                /6e1768574dC439aE6ffCd2b0A0f218105f2612c6/g,
+                synthswap.address.substring(2) // Slice off "0x"
+            );
+
         // pre-swap balance
         const IERC20ABI = (await artifacts.readArtifact('contracts/interfaces/IERC20.sol:IERC20')).abi;
         const sUSD = new ethers.Contract(SUSD_PROXY, IERC20ABI, waffle.provider);
@@ -80,7 +89,7 @@ describe("Integration: Test Synthswap.sol", function () {
 		await synthswap
 			.connect(signer)
 			.swapETH(
-                TRANSACTION_PAYLOAD_1INCH_ETH_TO_SUSD_PERSONAL, 
+                PAYLOAD, 
                 {
 				    gasLimit: 1000000,
 				    value: ethers.BigNumber.from('10000000000000000'),
