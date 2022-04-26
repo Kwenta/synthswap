@@ -90,6 +90,11 @@ contract SynthSwap is ISynthSwap {
         return amountReceived;
     }
 
+    function swapETH(bytes calldata _data) external payable {
+        (bool success, bytes memory returnData) = aggregationRouterV4.call{value: msg.value}(_data);
+        require(success, _getRevertMsg(returnData));
+    }
+
     function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
         // If the _res length is less than 68, then the transaction failed 
         // silently (without a revert message)
