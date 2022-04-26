@@ -74,7 +74,7 @@ describe("Integration: Test Synthswap.sol", function () {
         // This is because when generating the 1inch payload we need to specify a destination receiver address,
         // which is our SynthSwap contract, and this is not known ahead of time.
         const PAYLOAD =
-            TRANSACTION_PAYLOAD_1INCH_ETH_TO_SUSD.replace(
+            TRANSACTION_PAYLOAD_1INCH_ETH_TO_SUSD_PERSONAL.replace(
                 /6e1768574dC439aE6ffCd2b0A0f218105f2612c6/g,
                 synthswap.address.substring(2) // Slice off "0x"
             );
