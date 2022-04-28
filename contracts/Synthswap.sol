@@ -5,17 +5,18 @@ import "./interfaces/ISynthSwap.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IAddressResolver.sol";
+import "./interfaces/IAggregationRouterV4.sol";
+import "./interfaces/IAggregationExecutor.sol";
 import "./utils/SafeERC20.sol";
 
 contract SynthSwap is ISynthSwap {
     using SafeERC20 for IERC20;
 
     ISynthetix synthetix;
-    IAddressResolver addressResolver;
     IERC20 sUSD;
-
+    IAggregationRouterV4 router;
+    IAddressResolver addressResolver;
     address volumeRewards;
-    address aggregationRouterV4;
 
     event SwapInto(address indexed from, uint amountReceived);
     event SwapOutOf(address indexed from, uint amountReceived);
@@ -23,15 +24,15 @@ contract SynthSwap is ISynthSwap {
     constructor (
         address _synthetix, 
         address _sUSD,
-        address _volumeRewards,
         address _aggregationRouterV4,
-        address _addressResolver
+        address _addressResolver,
+        address _volumeRewards
     ) {
         synthetix = ISynthetix(_synthetix);
         sUSD = IERC20(_sUSD);
-        volumeRewards = _volumeRewards;
-        aggregationRouterV4 = _aggregationRouterV4;
+        router = IAggregationRouterV4(_aggregationRouterV4);
         addressResolver = IAddressResolver(_addressResolver);
+        volumeRewards = _volumeRewards;
     }
 
     /// @inheritdoc ISynthSwap
@@ -39,19 +40,42 @@ contract SynthSwap is ISynthSwap {
         bytes32 destinationSynthCurrencyKey,
         bytes calldata _data
     ) external payable override returns (uint) {
+        // decode _data for swap
+        (
+            IAggregationExecutor executor,
+            IAggregationRouterV4.SwapDescription memory desc,
+            bytes memory routeData
+        ) = abi.decode(
+            _data,
+            (
+                IAggregationExecutor,
+                IAggregationRouterV4.SwapDescription,
+                bytes
+            )
+        );
 
-        // make sure to set destReceiver to this contract
-        (bool success, bytes memory returnData) = aggregationRouterV4.call{value: msg.value}(_data);
-        require(success, _getRevertMsg(returnData));
-        (uint sUSDAmountOut,) = abi.decode(returnData, (uint, uint));
-        
-        sUSD.approve(address(synthetix), sUSDAmountOut);
+        // intermediary token should always be sUSD
+        require(desc.dstToken == address(sUSD), "SynthSwap: 1inch destination token is not sUSD");
 
+        // set dest address to this correct address
+        desc.dstReceiver = payable(address(this));
+
+        // calculate sUSD Balance pre-swap
+        uint sUSDBalance = sUSD.balanceOf(address(this));
+
+        // execute 1inch swap
+        router.swap{value: msg.value}(executor, desc, routeData);
+
+        // calculate sUSD Balance post-swap
+        sUSDBalance = sUSD.balanceOf(address(this)) - sUSDBalance;
+
+        // execute synthetix swap
+        // TODO: exchangeWithTrackingForInitiator: reverted with reason string 'Cannot be run on this layer'
         uint amountReceived = synthetix.exchangeWithTrackingForInitiator(
             'sUSD', // source currency key
-            sUSDAmountOut, // source amount
+            sUSDBalance, // source amount
             destinationSynthCurrencyKey, // destination currency key
-            volumeRewards, 
+            volumeRewards, // rewards
             'KWENTA' // tracking code
         );
         
@@ -65,7 +89,7 @@ contract SynthSwap is ISynthSwap {
         uint sourceAmount,
         bytes calldata _data
     ) external override returns (uint) {
-
+        // transfer and approve token (synth) for swap
         IERC20 sourceSynth = IERC20(addressResolver.getSynth(sourceSynthCurrencyKey));
         sourceSynth.safeTransferFrom(msg.sender, address(this), sourceAmount);
         sourceSynth.safeApprove(address(synthetix), sourceAmount);
@@ -75,36 +99,42 @@ contract SynthSwap is ISynthSwap {
             sourceSynthCurrencyKey, // source currency key
             sourceAmount, // source amount
             'sUSD', // destination currency key
-            volumeRewards, 
+            volumeRewards, // rewards
             'KWENTA' // tracking code
         );
 
-        sUSD.safeApprove(address(aggregationRouterV4), sUSDAmountOut);
+        // approve router to spend sUSD
+        sUSD.safeApprove(address(router), sUSDAmountOut);
 
-        // make sure to set destReceiver to caller
-        (bool success, bytes memory returnData) = aggregationRouterV4.call(_data);
-        require(success, _getRevertMsg(returnData));
-        (uint amountReceived,) = abi.decode(returnData, (uint, uint));
+        // decode _data for swap
+        (
+            IAggregationExecutor executor,
+            IAggregationRouterV4.SwapDescription memory desc,
+            bytes memory routeData
+        ) = abi.decode(
+            _data,
+            (
+                IAggregationExecutor,
+                IAggregationRouterV4.SwapDescription,
+                bytes
+            )
+        );
+
+        // intermediary token should always be sUSD
+        require(desc.srcToken == address(sUSD), "SynthSwap: 1inch source token is not sUSD");
+
+        // calculate dstToken Balance pre-swap
+        IERC20 dstToken = IERC20(desc.dstToken);
+        uint dstTokenBalance = dstToken.balanceOf(address(this));
+
+        // execute 1inch swap
+        router.swap(executor, desc, routeData);
+
+        // calculate dstToken Balance post-swap
+        uint destTokenAmountOut = dstToken.balanceOf(address(this)) - dstTokenBalance;
         
-        emit SwapOutOf(msg.sender, amountReceived);
-        return amountReceived;
+        emit SwapOutOf(msg.sender, destTokenAmountOut);
+        return destTokenAmountOut;
     }
 
-    function swapETH(bytes calldata _data) external payable {
-        (bool success, bytes memory returnData) = aggregationRouterV4.call{value: msg.value}(_data);
-        require(success, _getRevertMsg(returnData));
-    }
-
-    function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
-        // If the _res length is less than 68, then the transaction failed 
-        // silently (without a revert message)
-        if (_returnData.length < 68) return 'Transaction reverted silently';
-
-        assembly {
-            // Slice the sighash
-            _returnData := add(_returnData, 0x04)
-        }
-        // All that remains is the revert string
-        return abi.decode(_returnData, (string));
-    }
 }
