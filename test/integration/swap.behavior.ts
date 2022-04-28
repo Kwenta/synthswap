@@ -129,17 +129,17 @@ describe("Integration: Test Synthswap.sol", function () {
 
         // pre-swap balance
         const IERC20ABI = (await artifacts.readArtifact("contracts/interfaces/IERC20.sol:IERC20")).abi;
-        const sETH = new ethers.Contract(SETH_PROXY, IERC20ABI, waffle.provider);
-        const preBalance = await sETH.balanceOf(TEST_ADDRESS);
-        
-        // approve AGGREGATION_ROUTER_V4 to spend WETH
-        const signer = await ethers.getSigner(TEST_ADDRESS);
         const WETH = new ethers.Contract(WETH_ADDRESS, IERC20ABI, waffle.provider);
-        await WETH.connect(signer).approve(AGGREGATION_ROUTER_V4, ethers.BigNumber.from("100000000000000000"));
+        const preBalance = await WETH.balanceOf(TEST_ADDRESS);
+        
+        // approve SynthSwap to spend sETH
+        const signer = await ethers.getSigner(TEST_ADDRESS);
+        const sETH = new ethers.Contract(SETH_PROXY, IERC20ABI, waffle.provider);
+        await sETH.connect(signer).approve(synthswap.address, TEST_VALUE);
 
         // confirm allowance
-        const allowance = await WETH.allowance(signer.address, AGGREGATION_ROUTER_V4);
-        expect(allowance).to.equal(ethers.BigNumber.from("100000000000000000").toString());
+        const allowance = await sETH.allowance(signer.address, synthswap.address);
+        expect(allowance).to.equal(TEST_VALUE);
 
         const abiCoder = ethers.utils.defaultAbiCoder;
         const caller = AGGREGATION_EXECUTOR;
@@ -160,7 +160,7 @@ describe("Integration: Test Synthswap.sol", function () {
 				'tuple(address srcToken, address dstToken, address srcReceiver, address dstReceiver, uint256 amount, uint256 minReturnAmount, uint256 flags, bytes permit) desc',
 				'bytes data',
 			],
-			[caller, swapDescription, ETH_TO_SUSD_ROUTE]
+			[caller, swapDescription, SUSD_TO_WETH_ROUTE]
 		);
 
         // swap
@@ -170,12 +170,11 @@ describe("Integration: Test Synthswap.sol", function () {
             data,
             {
 				gasLimit: 1000000,
-				value: TEST_VALUE,
             }
         );
         
         // post-swap balance
-        const postBalance = await sETH.balanceOf(TEST_ADDRESS);
+        const postBalance = await WETH.balanceOf(TEST_ADDRESS);
         expect(postBalance).to.be.above(preBalance);
     }).timeout(200000);
 });
