@@ -78,6 +78,9 @@ contract SynthSwap is ISynthSwap {
         // calculate sUSD Balance post-swap
         sUSDBalance = (sUSD.balanceOf(address(this)) - sUSDBalance);
 
+        // increase allowance of sUSD for synthetix to spend 
+        sUSD.safeIncreaseAllowance(address(synthetix()), sUSDBalance);
+
         // execute synthetix swap
         uint amountReceived = synthetix().exchangeWithTracking(
             sUSD_CURRENCY_KEY,
@@ -114,8 +117,8 @@ contract SynthSwap is ISynthSwap {
             'KWENTA' // tracking code
         );
 
-        // approve router to spend sUSD
-        sUSD.safeApprove(address(router), sUSDAmountOut);
+        // increase allowance of sUSD for router to spend 
+        sUSD.safeIncreaseAllowance(address(router), sUSDAmountOut);
 
         // decode _data for swap
         (
