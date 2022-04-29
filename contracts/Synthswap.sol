@@ -12,32 +12,41 @@ import "./utils/SafeERC20.sol";
 contract SynthSwap is ISynthSwap {
     using SafeERC20 for IERC20;
 
-    ISynthetix synthetix;
-    IERC20 sUSD;
     IAggregationRouterV4 router;
     IAddressResolver addressResolver;
+    IERC20 sUSD;
+
     address volumeRewards;
+
+    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
+    bytes32 private constant sUSD_CURRENCY_KEY = "sUSD";
 
     event SwapInto(address indexed from, uint amountReceived);
     event SwapOutOf(address indexed from, uint amountReceived);
     
     constructor (
-        address _synthetix, 
         address _sUSD,
         address _aggregationRouterV4,
         address _addressResolver,
         address _volumeRewards
     ) {
-        synthetix = ISynthetix(_synthetix);
         sUSD = IERC20(_sUSD);
         router = IAggregationRouterV4(_aggregationRouterV4);
         addressResolver = IAddressResolver(_addressResolver);
         volumeRewards = _volumeRewards;
     }
 
+    function synthetix() internal view returns (ISynthetix) {
+        return ISynthetix(addressResolver.requireAndGetAddress(
+            CONTRACT_SYNTHETIX, 
+            "Could not get Synthetix"
+        ));
+    }
+
     /// @inheritdoc ISynthSwap
     function swapInto(
-        bytes32 destinationSynthCurrencyKey,
+        bytes32 destSynthCurrencyKey,
+        address destSynthAddress,
         bytes calldata _data
     ) external payable override returns (uint) {
         // decode _data for swap
@@ -67,17 +76,18 @@ contract SynthSwap is ISynthSwap {
         router.swap{value: msg.value}(executor, desc, routeData);
 
         // calculate sUSD Balance post-swap
-        sUSDBalance = sUSD.balanceOf(address(this)) - sUSDBalance;
+        sUSDBalance = (sUSD.balanceOf(address(this)) - sUSDBalance);
 
         // execute synthetix swap
-        // TODO: exchangeWithTrackingForInitiator: reverted with reason string 'Cannot be run on this layer'
-        uint amountReceived = synthetix.exchangeWithTrackingForInitiator(
-            'sUSD', // source currency key
-            sUSDBalance, // source amount
-            destinationSynthCurrencyKey, // destination currency key
-            volumeRewards, // rewards
-            'KWENTA' // tracking code
+        uint amountReceived = synthetix().exchangeWithTracking(
+            sUSD_CURRENCY_KEY,
+            sUSDBalance,
+            destSynthCurrencyKey,
+            volumeRewards,
+            'KWENTA'
         );
+
+        IERC20(destSynthAddress).safeTransfer(address(this), amountReceived);
         
         emit SwapInto(msg.sender, amountReceived);
         return amountReceived;
@@ -86,16 +96,17 @@ contract SynthSwap is ISynthSwap {
     /// @inheritdoc ISynthSwap
     function swapOutOf(
         bytes32 sourceSynthCurrencyKey,
+        address sourceSynthAddress,
         uint sourceAmount,
         bytes calldata _data
     ) external override returns (uint) {
         // transfer and approve token (synth) for swap
-        IERC20 sourceSynth = IERC20(addressResolver.getSynth(sourceSynthCurrencyKey));
+        IERC20 sourceSynth = IERC20(sourceSynthAddress);
         sourceSynth.safeTransferFrom(msg.sender, address(this), sourceAmount);
-        sourceSynth.safeApprove(address(synthetix), sourceAmount);
+        sourceSynth.safeApprove(address(synthetix()), sourceAmount);
 
         // we don't use ForInitiator here because we want the sUSD returned to this contract
-        uint sUSDAmountOut = synthetix.exchangeWithTracking(
+        uint sUSDAmountOut = synthetix().exchangeWithTracking(
             sourceSynthCurrencyKey, // source currency key
             sourceAmount, // source amount
             'sUSD', // destination currency key

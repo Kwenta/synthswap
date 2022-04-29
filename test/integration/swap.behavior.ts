@@ -16,7 +16,7 @@ const SYNTHETIX_PROXY = "0x8700dAec35aF8Ff88c16BdF0418774CB3D7599B4";
 const ADDRESS_RESOLVER = "0x95A6a3f44a70172E7d50a9e28c85Dfd712756B8C";
 const SUSD_PROXY = "0x8c6f28f2F1A3C87F0f938b96d27520d9751ec8d9";
 const SETH_PROXY = "0xE405de8F52ba7559f9df3C368500B6E6ae6Cee49";
-const SETH_BYTES32 = "0x7345544800000000000000000000000000000000000000000000000000000000";
+const SETH_BYTES32 = ethers.utils.formatBytes32String("sETH");
 
 // 1inch specific
 const AGGREGATION_ROUTER_V4 = "0x1111111254760F7ab3F16433eea9304126DCd199";
@@ -50,32 +50,30 @@ describe("Integration: Test Synthswap.sol", function () {
     it("Test SynthSwap deployment", async () => {
         const SynthSwap = await ethers.getContractFactory("SynthSwap");
         const synthswap = await SynthSwap.deploy(
-            SYNTHETIX_PROXY,
             SUSD_PROXY,
-            VOLUME_REWARDS,
             AGGREGATION_ROUTER_V4,
-            ADDRESS_RESOLVER
+            ADDRESS_RESOLVER,
+            VOLUME_REWARDS
         );
         await synthswap.deployed();
         expect(synthswap.address).to.exist;
     });
 
-    it.skip("Test swap ETH into sETH", async () => {
+    it("Test swap ETH into sETH", async () => {
         // ETH -(1inchAggregator)-> sUSD -(Synthetix)-> sETH
         const SynthSwap = await ethers.getContractFactory("SynthSwap");
         const synthswap = await SynthSwap.deploy(
-            SYNTHETIX_PROXY,
             SUSD_PROXY,
-            VOLUME_REWARDS,
             AGGREGATION_ROUTER_V4,
-            ADDRESS_RESOLVER
+            ADDRESS_RESOLVER,
+            VOLUME_REWARDS
         );
         await synthswap.deployed();
 
         // pre-swap balance
         const IERC20ABI = (await artifacts.readArtifact("contracts/interfaces/IERC20.sol:IERC20")).abi;
         const sETH = new ethers.Contract(SETH_PROXY, IERC20ABI, waffle.provider);
-        const preBalance = await sETH.balanceOf(TEST_ADDRESS);
+        const preBalance = await sETH.balanceOf(synthswap.address);
 
         const abiCoder = ethers.utils.defaultAbiCoder;
         const caller = AGGREGATION_EXECUTOR;
@@ -103,6 +101,7 @@ describe("Integration: Test Synthswap.sol", function () {
         const signer = await ethers.getSigner(TEST_ADDRESS);
 		await synthswap.connect(signer).swapInto(
             SETH_BYTES32,
+            SETH_PROXY,
             data, 
             {
 				gasLimit: 1000000,
@@ -111,7 +110,7 @@ describe("Integration: Test Synthswap.sol", function () {
         );
         
         // post-swap balance
-        const postBalance = await sETH.balanceOf(TEST_ADDRESS);
+        const postBalance = await sETH.balanceOf(synthswap.address);
         expect(postBalance).to.be.above(preBalance);
     }).timeout(200000);
 
@@ -119,11 +118,10 @@ describe("Integration: Test Synthswap.sol", function () {
         // WETH -(1inchAggregator)-> sUSD -(Synthetix)-> sETH
         const SynthSwap = await ethers.getContractFactory("SynthSwap");
         const synthswap = await SynthSwap.deploy(
-            SYNTHETIX_PROXY,
             SUSD_PROXY,
-            VOLUME_REWARDS,
             AGGREGATION_ROUTER_V4,
-            ADDRESS_RESOLVER
+            ADDRESS_RESOLVER,
+            VOLUME_REWARDS
         );
         await synthswap.deployed();
 
@@ -165,8 +163,9 @@ describe("Integration: Test Synthswap.sol", function () {
 
         // swap
 		await synthswap.connect(signer).swapOutOf(
-            TEST_VALUE,
             SETH_BYTES32,
+            SETH_PROXY,
+            TEST_VALUE,
             data,
             {
 				gasLimit: 1000000,
