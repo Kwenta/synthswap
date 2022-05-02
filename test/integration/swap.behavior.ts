@@ -109,7 +109,6 @@ describe("Integration: Test Synthswap.sol", function () {
             }
         );
         
-        // post-swap balance
         const postBalance = await sETH.balanceOf(synthswap.address);
         expect(postBalance).to.be.above(preBalance);
     }).timeout(200000);
