@@ -7,12 +7,12 @@ interface ISynthSwap {
     /// @notice swap into a specified synth
     /// @dev supports ETH -> Synth conversions
     /// @param destSynthCurrencyKey is the bytes32 representation of a Synthetix currency key
-    /// @param sourceSynthAddress is the address of destination synth
+    /// @param destSynthAddress is the address of destination synth
     /// @param _data is the transaction data returned by the 1inch API 
     /// @return amount of destination synth received from swap
     function swapInto(
         bytes32 destSynthCurrencyKey,
-        address sourceSynthAddress,
+        address destSynthAddress,
         bytes calldata _data
     ) external payable returns (uint);
 
