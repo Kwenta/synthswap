@@ -9,17 +9,20 @@ import "./interfaces/IAggregationRouterV4.sol";
 import "./interfaces/IAggregationExecutor.sol";
 import "./utils/SafeERC20.sol";
 
+/// @title system to swap synths to/from many erc20 tokens
+/// @dev IAggregationRouterV4 relies on calldata generated off-chain
+/// and IAddressResolver dynamically fetches address for Synthetix
 contract SynthSwap is ISynthSwap {
     using SafeERC20 for IERC20;
+
+    IERC20 immutable sUSD;
+    IAggregationRouterV4 immutable router;
+    IAddressResolver immutable addressResolver;
+    address immutable volumeRewards;
 
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant sUSD_CURRENCY_KEY = "sUSD";
     bytes32 private constant TRACKING_CODE = "KWENTA";
-
-    IERC20 sUSD;
-    IAggregationRouterV4 router;
-    IAddressResolver addressResolver;
-    address volumeRewards;
 
     event SwapInto(address indexed from, uint amountReceived);
     event SwapOutOf(address indexed from, uint amountReceived);
@@ -36,6 +39,7 @@ contract SynthSwap is ISynthSwap {
         volumeRewards = _volumeRewards;
     }
 
+    /// @notice addressResolver fetches ISynthetix address 
     function synthetix() internal view returns (ISynthetix) {
         return ISynthetix(addressResolver.requireAndGetAddress(
             CONTRACT_SYNTHETIX, 
@@ -66,34 +70,28 @@ contract SynthSwap is ISynthSwap {
         // intermediary token should always be sUSD
         require(desc.dstToken == address(sUSD), "SynthSwap: 1inch destination token is not sUSD");
 
-        // set swap description dest. address to this contract address
+        // set swap description destination address to this contract address
         desc.dstReceiver = payable(address(this));
 
-        // calculate sUSD Balance pre-swap
-        uint sUSDBalance = sUSD.balanceOf(address(this));
-
         // execute 1inch swap
-        router.swap{value: msg.value}(executor, desc, routeData);
-
-        // calculate sUSD Balance post-swap
-        sUSDBalance = (sUSD.balanceOf(address(this)) - sUSDBalance);
+        (uint sUSDAmountOut,) = router.swap{value: msg.value}(executor, desc, routeData);
 
         // increase allowance of sUSD for synthetix to spend 
-        sUSD.safeIncreaseAllowance(address(synthetix()), sUSDBalance);
+        sUSD.safeIncreaseAllowance(address(synthetix()), sUSDAmountOut);
 
         // execute synthetix swap
         uint amountReceived = synthetix().exchangeWithTracking(
             sUSD_CURRENCY_KEY,
-            sUSDBalance,
+            sUSDAmountOut,
             destSynthCurrencyKey,
             address(this),
             TRACKING_CODE
         );
 
         // decrease allowance of sUSD for synthetix to spend 
-        sUSD.safeDecreaseAllowance(address(synthetix()), sUSDBalance);
+        sUSD.safeDecreaseAllowance(address(synthetix()), sUSDAmountOut);
 
-        IERC20(destSynthAddress).safeTransfer(address(this), amountReceived);
+        IERC20(destSynthAddress).safeTransfer(msg.sender, amountReceived);
         
         emit SwapInto(msg.sender, amountReceived);
         return amountReceived;
@@ -106,12 +104,12 @@ contract SynthSwap is ISynthSwap {
         uint sourceAmount,
         bytes calldata _data
     ) external override returns (uint) {
-        // transfer token (synth) for swap
+        // transfer sourceSynth for swap
         IERC20 sourceSynth = IERC20(sourceSynthAddress);
-        sourceSynth.safeTransferFrom(msg.sender, address(this), sourceAmount);
+        sourceSynth.transferFrom(msg.sender, address(this), sourceAmount);
 
         // increase allowance of sourceSynth for synthetix to spend 
-        sourceSynth.safeIncreaseAllowance(address(synthetix()), sourceAmount);
+        sourceSynth.approve(address(synthetix()), sourceAmount);
 
         // execute synthetix swap
         uint sUSDAmountOut = synthetix().exchangeWithTracking(
@@ -121,9 +119,6 @@ contract SynthSwap is ISynthSwap {
             volumeRewards,
             TRACKING_CODE
         );
-
-        // decrease allowance of sourceSynth for synthetix to spend 
-        sourceSynth.safeDecreaseAllowance(address(synthetix()), sourceAmount);
 
         // decode _data for 1inch swap
         (
@@ -142,26 +137,23 @@ contract SynthSwap is ISynthSwap {
         // intermediary token should always be sUSD
         require(desc.srcToken == address(sUSD), "SynthSwap: 1inch source token is not sUSD");
 
-        // set swap description dest. address to the function caller
+        // set swap description destination address to the function caller
         desc.dstReceiver = payable(msg.sender);
+
         // set swap description amount to sUSD received from synthetix swap
         desc.amount = sUSDAmountOut;
-
-        // calculate dstToken Balance pre-swap
-        IERC20 dstToken = IERC20(desc.dstToken);
-        uint dstTokenBalance = dstToken.balanceOf(address(this));
 
         // increase allowance of sUSD for router to spend 
         sUSD.safeIncreaseAllowance(address(router), sUSDAmountOut);
 
+        // understand that sUSDAmountOut could be different than 
+        // sUSD amount used when generating routeData (prior to swapOutOf being called)
+
         // execute 1inch swap
-        router.swap(executor, desc, routeData);
+        (uint destTokenAmountOut,) = router.swap(executor, desc, routeData);
 
         // decrease allowance of sUSD for router to spend 
         sUSD.safeDecreaseAllowance(address(synthetix()), sUSDAmountOut);
-
-        // calculate dstToken Balance post-swap
-        uint destTokenAmountOut = dstToken.balanceOf(address(this)) - dstTokenBalance;
         
         emit SwapOutOf(msg.sender, destTokenAmountOut);
         return destTokenAmountOut;
