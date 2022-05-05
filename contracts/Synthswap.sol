@@ -50,39 +50,46 @@ contract SynthSwap is ISynthSwap {
 
     /// @inheritdoc ISynthSwap
     function swapInto(
-        bytes32 destSynthCurrencyKey,
-        address destSynthAddress,
+        bytes32 _destSynthCurrencyKey,
+        address _destSynthAddress,
         bytes calldata _data
     ) external payable override returns (uint) {
-        uint sUSDAmountOut = swapOn1inch(_data, address(this));
-        uint amountReceived = swapOnSynthetix(
-            sUSDAmountOut, 
-            sUSD_CURRENCY_KEY, 
-            destSynthCurrencyKey, 
-            address(sUSD)
-        );
+        uint amountOut = swapOn1inch(_data, address(this));
 
-        IERC20(destSynthAddress).safeTransfer(msg.sender, amountReceived);
+        // if destination synth is NOT sUSD, swap on synthetix is necessary 
+        if (_destSynthCurrencyKey != sUSD_CURRENCY_KEY) {
+            amountOut = swapOnSynthetix(
+                amountOut, 
+                sUSD_CURRENCY_KEY, 
+                _destSynthCurrencyKey, 
+                address(sUSD)
+            );
+        }
+
+        IERC20(_destSynthAddress).safeTransfer(msg.sender, amountOut);
   
-        emit SwapInto(msg.sender, amountReceived);
-        return amountReceived;
+        emit SwapInto(msg.sender, amountOut);
+        return amountOut;
     }
 
     /// @inheritdoc ISynthSwap
     function swapOutOf(
-        bytes32 sourceSynthCurrencyKey,
-        address sourceSynthAddress,
-        uint sourceAmount,
+        bytes32 _sourceSynthCurrencyKey,
+        address _sourceSynthAddress,
+        uint _sourceAmount,
         bytes calldata _data
     ) external override returns (uint) {
-
+        // TODO
     }
 
     /// @notice execute swap on 1inch
     /// @dev token approval needed when source is not ETH
+    /// @param _data specifying swap data
+    /// @param _receiver is the address destination tokens go to
+    /// @return amount received from 1inch swap
     function swapOn1inch(
-        bytes calldata data, 
-        address receiver
+        bytes calldata _data, 
+        address _receiver
     ) internal returns (uint) {
         // decode _data for 1inch swap
         (
@@ -90,7 +97,7 @@ contract SynthSwap is ISynthSwap {
             IAggregationRouterV4.SwapDescription memory desc,
             bytes memory routeData
         ) = abi.decode(
-            data,
+            _data,
             (
                 IAggregationExecutor,
                 IAggregationRouterV4.SwapDescription,
@@ -99,18 +106,19 @@ contract SynthSwap is ISynthSwap {
         );
 
         // set swap description destination address to _receiver
-        desc.dstReceiver = payable(receiver);
+        desc.dstReceiver = payable(_receiver);
 
         bool isETH = ETH_ADDRESS == desc.srcToken;
         if (!isETH) {
             // if receiver is this address, then the source tokens 
             // do not currently reside at this address
-            if (receiver == address(this)) {
+            if (_receiver == address(this)) {
                 // transfer token to this contract
                 IERC20(desc.srcToken).safeTransferFrom(msg.sender, address(this), desc.amount);
             }
             // increase allowance
             IERC20(desc.srcToken).safeIncreaseAllowance(address(router), desc.amount);
+            IERC20(desc.srcToken).safeIncreaseAllowance(desc.srcReceiver, desc.amount);
         }
 
         // execute 1inch swap
@@ -121,34 +129,39 @@ contract SynthSwap is ISynthSwap {
             IERC20(desc.srcToken).safeDecreaseAllowance(address(router), desc.amount);
         }
 
-        require(amountOut > 0, "Synthswap: swapOn1inch failed");
+        require(amountOut > 0, "SynthSwap: swapOn1inch failed");
         return amountOut;
     }
 
     /// @notice execute swap on Synthetix
     /// @dev token approval is always required
+    /// @param _amount of source synth to swap
+    /// @param _sourceSynthCurrencyKey source synth key needed for exchange
+    /// @param _destSynthCurrencyKey destination synth key needed for exchange
+    /// @param _sourceSynthAddress source synth address needed for approval
+    /// @return amountOut: received from synthetix swap
     function swapOnSynthetix(
-        uint amount,
-        bytes32 sourceSynthCurrencyKey,
-        bytes32 destSynthCurrencyKey,
-        address sourceSynthAddress
+        uint _amount,
+        bytes32 _sourceSynthCurrencyKey,
+        bytes32 _destSynthCurrencyKey,
+        address _sourceSynthAddress
     ) internal returns (uint) {
         // increase allowance of sourceSynth for synthetix to spend 
-         IERC20(sourceSynthAddress).safeIncreaseAllowance(address(synthetix()), amount);
+         IERC20(_sourceSynthAddress).safeIncreaseAllowance(address(synthetix()), _amount);
 
         // execute synthetix swap
         uint amountOut = synthetix().exchangeWithTracking(
-            sourceSynthCurrencyKey,
-            amount,
-            destSynthCurrencyKey,
+            _sourceSynthCurrencyKey,
+            _amount,
+            _destSynthCurrencyKey,
             volumeRewards,
             TRACKING_CODE
         );
 
         // decrease allowance of sourceSynth for synthetix to spend 
-         IERC20(sourceSynthAddress).safeDecreaseAllowance(address(synthetix()), amount);
+        IERC20(_sourceSynthAddress).safeDecreaseAllowance(address(synthetix()), _amount);
 
-        require(amountOut > 0, "Synthswap: swapOn1inch failed");
+        require(amountOut > 0, "SynthSwap: swapOnSynthetix failed");
         return amountOut;
     }
 
