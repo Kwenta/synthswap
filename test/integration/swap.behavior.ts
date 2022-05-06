@@ -51,7 +51,7 @@ const forkAndImpersonateAtBlock = async (block: number, account: string) => {
 };
 
 describe("Integration: Test Synthswap.sol", function () {
-    it.skip("Test SynthSwap deployment", async () => {
+    it("Test SynthSwap deployment", async () => {
         forkAndImpersonateAtBlock(6950543, TEST_ADDRESS);
 
         const SynthSwap = await ethers.getContractFactory("SynthSwap");
@@ -70,7 +70,7 @@ describe("Integration: Test Synthswap.sol", function () {
     ////////////////////////
 
     it("Test swap ETH into sETH", async () => {
-        forkAndImpersonateAtBlock(6950543, TEST_ADDRESS);
+        await forkAndImpersonateAtBlock(6950543, TEST_ADDRESS);
 
         // ETH -(1inchAggregator)-> sUSD -(Synthetix)-> sETH
         const SynthSwap = await ethers.getContractFactory("SynthSwap");
@@ -125,7 +125,7 @@ describe("Integration: Test Synthswap.sol", function () {
     }).timeout(200000);
 
     it("Test swap ETH into sLINK", async () => {
-        forkAndImpersonateAtBlock(6950543, TEST_ADDRESS);
+        await forkAndImpersonateAtBlock(6950543, TEST_ADDRESS);
 
         // ETH -(1inchAggregator)-> sUSD -(Synthetix)-> sLINK
         const SynthSwap = await ethers.getContractFactory("SynthSwap");
@@ -180,7 +180,7 @@ describe("Integration: Test Synthswap.sol", function () {
     }).timeout(200000);
 
     it("Test swap WETH into sLINK", async () => {
-        forkAndImpersonateAtBlock(7161863, TEST_ADDRESS);
+        await forkAndImpersonateAtBlock(7161862, TEST_ADDRESS);
 
         // WETH -(1inchAggregator)-> sUSD -(Synthetix)-> sLINK
         const SynthSwap = await ethers.getContractFactory("SynthSwap");
@@ -235,11 +235,10 @@ describe("Integration: Test Synthswap.sol", function () {
         expect(postBalance).to.be.above(preBalance);
     }).timeout(200000);
 
-    
-    it("Test swap ETH into sUSD", async () => {
-        forkAndImpersonateAtBlock(6950543, TEST_ADDRESS);
+    it("Test swap WETH into sUSD", async () => {
+        await forkAndImpersonateAtBlock(7161862, TEST_ADDRESS);
 
-        // ETH -(1inchAggregator)-> sUSD -(Synthetix)-> sETH
+        // WETH -(1inchAggregator)-> sUSD
         const SynthSwap = await ethers.getContractFactory("SynthSwap");
         const synthswap = await SynthSwap.deploy(
             SUSD_PROXY,
@@ -255,15 +254,15 @@ describe("Integration: Test Synthswap.sol", function () {
         const preBalance = await sUSD.balanceOf(TEST_ADDRESS);
 
         const abiCoder = ethers.utils.defaultAbiCoder;
-        const caller = "0x26271dfddbd250014f87f0f302c099d5a798bab1";
+        const caller = "0x94bc2a1c732bcad7343b25af48385fe76e08734f";
         const swapDescription = {
-            srcToken: ETH_ADDRESS,
-            dstToken: SUSD_PROXY,
-            srcReceiver: "0x26271dfddbd250014f87f0f302c099d5a798bab1",
+            srcToken: "0x4200000000000000000000000000000000000006",
+            dstToken: "0x8c6f28f2f1a3c87f0f938b96d27520d9751ec8d9",
+            srcReceiver: "0x94bc2a1c732bcad7343b25af48385fe76e08734f",
             dstReceiver: synthswap.address,
             amount: TEST_VALUE,
-            minReturnAmount: ethers.BigNumber.from("28087090916131374921"),
-            flags: 0,
+            minReturnAmount: ethers.BigNumber.from("1"),
+            flags: 5,
             permit: "0x"
         }
         

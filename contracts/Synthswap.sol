@@ -118,16 +118,17 @@ contract SynthSwap is ISynthSwap {
             }
             // increase allowance
             IERC20(desc.srcToken).safeIncreaseAllowance(address(router), desc.amount);
-            IERC20(desc.srcToken).safeIncreaseAllowance(desc.srcReceiver, desc.amount);
         }
 
         // execute 1inch swap
         (uint amountOut,) = router.swap{value: msg.value}(executor, desc, routeData);
 
-        if (!isETH) {
-            // decrease allowance
-            IERC20(desc.srcToken).safeDecreaseAllowance(address(router), desc.amount);
-        }
+
+        // below call to safeDecreaseAllowance reverts with `SafeERC20: decreased allowance below zero`
+        // if (!isETH) {
+        //     // decrease allowance
+        //     IERC20(desc.srcToken).safeDecreaseAllowance(address(router), desc.amount);
+        // }
 
         require(amountOut > 0, "SynthSwap: swapOn1inch failed");
         return amountOut;
