@@ -56,7 +56,7 @@ contract SynthSwap is ISynthSwap {
     ) external payable override returns (uint) {
         uint amountOut = swapOn1inch(_data, address(this));
 
-        // if destination synth is NOT sUSD, swap on synthetix is necessary 
+        // if destination synth is NOT sUSD, swap on Synthetix is necessary 
         if (_destSynthCurrencyKey != sUSD_CURRENCY_KEY) {
             amountOut = swapOnSynthetix(
                 amountOut, 
@@ -116,19 +116,12 @@ contract SynthSwap is ISynthSwap {
                 // transfer token to this contract
                 IERC20(desc.srcToken).safeTransferFrom(msg.sender, address(this), desc.amount);
             }
-            // increase allowance
-            IERC20(desc.srcToken).safeIncreaseAllowance(address(router), desc.amount);
+            // approve AggregationRouterV4 to spend srcToken
+            IERC20(desc.srcToken).safeApprove(address(router), desc.amount);
         }
 
         // execute 1inch swap
         (uint amountOut,) = router.swap{value: msg.value}(executor, desc, routeData);
-
-
-        // below call to safeDecreaseAllowance reverts with `SafeERC20: decreased allowance below zero`
-        // if (!isETH) {
-        //     // decrease allowance
-        //     IERC20(desc.srcToken).safeDecreaseAllowance(address(router), desc.amount);
-        // }
 
         require(amountOut > 0, "SynthSwap: swapOn1inch failed");
         return amountOut;
@@ -140,17 +133,17 @@ contract SynthSwap is ISynthSwap {
     /// @param _sourceSynthCurrencyKey source synth key needed for exchange
     /// @param _destSynthCurrencyKey destination synth key needed for exchange
     /// @param _sourceSynthAddress source synth address needed for approval
-    /// @return amountOut: received from synthetix swap
+    /// @return amountOut: received from Synthetix swap
     function swapOnSynthetix(
         uint _amount,
         bytes32 _sourceSynthCurrencyKey,
         bytes32 _destSynthCurrencyKey,
         address _sourceSynthAddress
     ) internal returns (uint) {
-        // increase allowance of sourceSynth for synthetix to spend 
-         IERC20(_sourceSynthAddress).safeIncreaseAllowance(address(synthetix()), _amount);
+        //  approve Synthetix to spend sourceSynth
+         IERC20(_sourceSynthAddress).safeApprove(address(synthetix()), _amount);
 
-        // execute synthetix swap
+        // execute Synthetix swap
         uint amountOut = synthetix().exchangeWithTracking(
             _sourceSynthCurrencyKey,
             _amount,
@@ -158,9 +151,6 @@ contract SynthSwap is ISynthSwap {
             volumeRewards,
             TRACKING_CODE
         );
-
-        // decrease allowance of sourceSynth for synthetix to spend 
-        IERC20(_sourceSynthAddress).safeDecreaseAllowance(address(synthetix()), _amount);
 
         require(amountOut > 0, "SynthSwap: swapOnSynthetix failed");
         return amountOut;
