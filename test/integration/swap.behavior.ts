@@ -69,7 +69,7 @@ describe("Integration: Test Synthswap.sol", function () {
     ////// swapInto() //////
     ////////////////////////
 
-    it("Test swap ETH into sETH", async () => {
+    it.skip("Test swap ETH into sETH", async () => {
         await forkAndImpersonateAtBlock(6950543, TEST_ADDRESS);
 
         // ETH -(1inchAggregator)-> sUSD -(Synthetix)-> sETH
@@ -124,7 +124,7 @@ describe("Integration: Test Synthswap.sol", function () {
         expect(postBalance).to.be.above(preBalance);
     }).timeout(200000);
 
-    it("Test swap ETH into sLINK", async () => {
+    it.skip("Test swap ETH into sLINK", async () => {
         await forkAndImpersonateAtBlock(6950543, TEST_ADDRESS);
 
         // ETH -(1inchAggregator)-> sUSD -(Synthetix)-> sLINK
@@ -275,8 +275,12 @@ describe("Integration: Test Synthswap.sol", function () {
 			[caller, swapDescription, ETH_TO_SUSD_ROUTE]
 		);
 
-        // swap
+        // must approve synthswap to swap tokens
         const signer = await ethers.getSigner(TEST_ADDRESS);
+        const WETH = new ethers.Contract(WETH_ADDRESS, IERC20ABI, waffle.provider);
+        await WETH.connect(signer).approve(synthswap.address, TEST_VALUE);
+
+        // swap
 		await synthswap.connect(signer).swapInto(
             SUSD_BYTES32,
             SUSD_PROXY,
