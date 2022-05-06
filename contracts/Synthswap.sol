@@ -79,7 +79,22 @@ contract SynthSwap is ISynthSwap {
         uint _sourceAmount,
         bytes calldata _data
     ) external override returns (uint) {
-        // TODO
+        uint amountOut = 0;
+
+        // if source synth is NOT sUSD, swap on Synthetix is necessary 
+        if (_sourceSynthCurrencyKey != sUSD_CURRENCY_KEY) {
+            amountOut = swapOnSynthetix(
+                _sourceAmount, 
+                _sourceSynthCurrencyKey, 
+                sUSD_CURRENCY_KEY, 
+                _sourceSynthAddress
+            );
+        }
+
+        amountOut = swapOn1inch(_data, payable(msg.sender));
+  
+        emit SwapOutOf(msg.sender, amountOut);
+        return amountOut;
     }
 
     /// @notice execute swap on 1inch
