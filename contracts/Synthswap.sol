@@ -54,7 +54,7 @@ contract SynthSwap is ISynthSwap {
         address _destSynthAddress,
         bytes calldata _data
     ) external payable override returns (uint) {
-        uint amountOut = swapOn1inch(_data, address(this));
+        (uint amountOut,) = swapOn1inch(_data, false);
 
         // if destination synth is NOT sUSD, swap on Synthetix is necessary 
         if (_destSynthCurrencyKey != sUSD_CURRENCY_KEY) {
@@ -79,19 +79,20 @@ contract SynthSwap is ISynthSwap {
         uint _sourceAmount,
         bytes calldata _data
     ) external override returns (uint) {
-        uint amountOut = 0;
-
         // if source synth is NOT sUSD, swap on Synthetix is necessary 
         if (_sourceSynthCurrencyKey != sUSD_CURRENCY_KEY) {
-            amountOut = swapOnSynthetix(
+            swapOnSynthetix(
                 _sourceAmount, 
                 _sourceSynthCurrencyKey, 
                 sUSD_CURRENCY_KEY, 
                 _sourceSynthAddress
             );
+        } else {
+            sUSD.safeTransferFrom(msg.sender, address(this), _sourceAmount); 
         }
 
-        amountOut = swapOn1inch(_data, payable(msg.sender));
+        (uint amountOut, address dstToken) = swapOn1inch(_data, true);
+        IERC20(dstToken).safeTransfer(msg.sender, amountOut);
   
         emit SwapOutOf(msg.sender, amountOut);
         return amountOut;
@@ -100,12 +101,12 @@ contract SynthSwap is ISynthSwap {
     /// @notice execute swap on 1inch
     /// @dev token approval needed when source is not ETH
     /// @param _data specifying swap data
-    /// @param _receiver is the address destination tokens go to
+    /// @param _areTokensInContract TODO
     /// @return amount received from 1inch swap
     function swapOn1inch(
         bytes calldata _data, 
-        address _receiver
-    ) internal returns (uint) {
+        bool _areTokensInContract
+    ) internal returns (uint, address) {
         // decode _data for 1inch swap
         (
             IAggregationExecutor executor,
@@ -120,14 +121,13 @@ contract SynthSwap is ISynthSwap {
             )
         );
 
-        // set swap description destination address to _receiver
-        desc.dstReceiver = payable(_receiver);
+        // set swap description destination address to this contract
+        desc.dstReceiver = payable(address(this));
 
         bool isETH = ETH_ADDRESS == desc.srcToken;
         if (!isETH) {
-            // if receiver is this address, then the source tokens 
-            // do not currently reside at this address
-            if (_receiver == address(this)) {
+            // if TODO
+            if (!_areTokensInContract) {
                 // transfer token to this contract
                 IERC20(desc.srcToken).safeTransferFrom(msg.sender, address(this), desc.amount);
             }
@@ -139,7 +139,7 @@ contract SynthSwap is ISynthSwap {
         (uint amountOut,) = router.swap{value: msg.value}(executor, desc, routeData);
 
         require(amountOut > 0, "SynthSwap: swapOn1inch failed");
-        return amountOut;
+        return (amountOut, desc.dstToken);
     }
 
     /// @notice execute swap on Synthetix
@@ -156,7 +156,7 @@ contract SynthSwap is ISynthSwap {
         address _sourceSynthAddress
     ) internal returns (uint) {
         //  approve Synthetix to spend sourceSynth
-         IERC20(_sourceSynthAddress).safeApprove(address(synthetix()), _amount);
+        IERC20(_sourceSynthAddress).safeApprove(address(synthetix()), _amount);
 
         // execute Synthetix swap
         uint amountOut = synthetix().exchangeWithTracking(
