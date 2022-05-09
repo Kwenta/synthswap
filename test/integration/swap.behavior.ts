@@ -85,8 +85,9 @@ Problem (swapOutOf)
 1. What happens IF Y, as approximated by calling IExchangeRates.effectiveValue(), is
    different from what is returned in (2.2) Z?
 
-Solutions:
-1. Have check in contract which reverts if values are different. Need to consider how often this might revert swaps...
+Solution:
+1. Both swapOutOf and uniswapSwapOutOf check sUSD balance after completing swap and send any
+   excess sUSD to treasury address
 
 Problem 
 1. 1inch is pretty buggy swapping with sUSD. Recalculations, slippage, etc are very common
@@ -121,6 +122,7 @@ const TEST_ADDRESS = "0x42f9134E9d3Bf7eEE1f8A5Ac2a4328B059E7468c"; // EOA
 const TEST_ADDRESS2 = "0xB483F21dC981D2D1E483192a15FcAc281669bF73"; // EOA
 const TEST_VALUE_1 = ethers.BigNumber.from("10000000000000000");
 const TEST_VALUE_2 = ethers.BigNumber.from("28000000000000000000");
+const TREASURY_DAO = "0x6e1768574dC439aE6ffCd2b0A0f218105f2612c6" // Random EOA for testing
 
 // synthetix
 const VOLUME_REWARDS = ethers.constants.AddressZero;
@@ -178,7 +180,8 @@ describe("Integration: Test Synthswap.sol", function () {
             SUSD_PROXY,
             AGGREGATION_ROUTER_V4,
             ADDRESS_RESOLVER,
-            VOLUME_REWARDS
+            VOLUME_REWARDS,
+            TREASURY_DAO
         );
         await synthswap.deployed();
         expect(synthswap.address).to.exist;
@@ -188,7 +191,7 @@ describe("Integration: Test Synthswap.sol", function () {
     ////// swapInto() //////
     ////////////////////////
 
-    it("Test swap ETH into sETH", async () => {
+    it.skip("Test swap ETH into sETH", async () => {
         await forkAndImpersonateAtBlock(6950543, TEST_ADDRESS);
 
         // ETH -(1inchAggregator)-> sUSD -(Synthetix)-> sETH
@@ -197,7 +200,8 @@ describe("Integration: Test Synthswap.sol", function () {
             SUSD_PROXY,
             AGGREGATION_ROUTER_V4,
             ADDRESS_RESOLVER,
-            VOLUME_REWARDS
+            VOLUME_REWARDS,
+            TREASURY_DAO
         );
         await synthswap.deployed();
 
@@ -243,7 +247,7 @@ describe("Integration: Test Synthswap.sol", function () {
         expect(postBalance).to.be.above(preBalance);
     }).timeout(600000);
 
-    it("Test swap ETH into sLINK", async () => {
+    it.skip("Test swap ETH into sLINK", async () => {
         await forkAndImpersonateAtBlock(6950543, TEST_ADDRESS);
 
         // ETH -(1inchAggregator)-> sUSD -(Synthetix)-> sLINK
@@ -252,7 +256,8 @@ describe("Integration: Test Synthswap.sol", function () {
             SUSD_PROXY,
             AGGREGATION_ROUTER_V4,
             ADDRESS_RESOLVER,
-            VOLUME_REWARDS
+            VOLUME_REWARDS,
+            TREASURY_DAO
         );
         await synthswap.deployed();
 
@@ -298,7 +303,7 @@ describe("Integration: Test Synthswap.sol", function () {
         expect(postBalance).to.be.above(preBalance);
     }).timeout(600000);
 
-    it("Test swap WETH into sLINK", async () => {
+    it.skip("Test swap WETH into sLINK", async () => {
         await forkAndImpersonateAtBlock(7161862, TEST_ADDRESS);
 
         // WETH -(1inchAggregator)-> sUSD -(Synthetix)-> sLINK
@@ -307,7 +312,8 @@ describe("Integration: Test Synthswap.sol", function () {
             SUSD_PROXY,
             AGGREGATION_ROUTER_V4,
             ADDRESS_RESOLVER,
-            VOLUME_REWARDS
+            VOLUME_REWARDS,
+            TREASURY_DAO
         );
         await synthswap.deployed();
 
@@ -354,7 +360,7 @@ describe("Integration: Test Synthswap.sol", function () {
         expect(postBalance).to.be.above(preBalance);
     }).timeout(600000);
 
-    it("Test swap WETH into sUSD", async () => {
+    it.skip("Test swap WETH into sUSD", async () => {
         await forkAndImpersonateAtBlock(7161861, TEST_ADDRESS);
 
         // WETH -(1inchAggregator)-> sUSD
@@ -363,7 +369,8 @@ describe("Integration: Test Synthswap.sol", function () {
             SUSD_PROXY,
             AGGREGATION_ROUTER_V4,
             ADDRESS_RESOLVER,
-            VOLUME_REWARDS
+            VOLUME_REWARDS,
+            TREASURY_DAO
         );
         await synthswap.deployed();
 
@@ -414,7 +421,7 @@ describe("Integration: Test Synthswap.sol", function () {
     ////// swapOutOf() /////
     ////////////////////////
 
-    it("Test swap sUSD into WETH", async () => {   
+    it.skip("Test swap sUSD into WETH", async () => {   
         await forkAndImpersonateAtBlock(7247381, TEST_ADDRESS2);
 
         // sUSD -(1inchAggregator)-> WETH
@@ -423,7 +430,8 @@ describe("Integration: Test Synthswap.sol", function () {
             SUSD_PROXY,
             AGGREGATION_ROUTER_V4,
             ADDRESS_RESOLVER,
-            VOLUME_REWARDS
+            VOLUME_REWARDS,
+            TREASURY_DAO
         );
         await synthswap.deployed();
 
@@ -471,7 +479,7 @@ describe("Integration: Test Synthswap.sol", function () {
         expect(postBalance).to.be.above(preBalance);
     }).timeout(600000);
 
-    it("Test swap sETH into WETH", async () => {
+    it.skip("Test swap sETH into WETH", async () => {
         await forkAndImpersonateAtBlock(7327867, TEST_ADDRESS2);
 
         // sETH -(Synthetix)-> sUSD -(1inchAggregator)-> WETH
@@ -480,7 +488,8 @@ describe("Integration: Test Synthswap.sol", function () {
             SUSD_PROXY,
             AGGREGATION_ROUTER_V4,
             ADDRESS_RESOLVER,
-            VOLUME_REWARDS
+            VOLUME_REWARDS,
+            TREASURY_DAO
         );
         await synthswap.deployed();
         
@@ -529,7 +538,7 @@ describe("Integration: Test Synthswap.sol", function () {
         expect(postBalance).to.be.above(preBalance);
     }).timeout(600000);
 
-    // need valid swap data for sETH -> ETH
+    // FAILS: needs valid swap data for sETH -> ETH
     it.skip("Test swap sETH into ETH", async () => {
         await forkAndImpersonateAtBlock(7417356, TEST_ADDRESS2);
 
@@ -539,7 +548,8 @@ describe("Integration: Test Synthswap.sol", function () {
             SUSD_PROXY,
             AGGREGATION_ROUTER_V4,
             ADDRESS_RESOLVER,
-            VOLUME_REWARDS
+            VOLUME_REWARDS,
+            TREASURY_DAO
         );
         await synthswap.deployed();
         
@@ -597,7 +607,7 @@ describe("Integration: Test Synthswap.sol", function () {
     /// uniswapSwapOutOf ///
     ////////////////////////
 
-    it("Test uniswapSwapOutOf sETH into ETH", async () => {
+    it.skip("Test uniswapSwapOutOf sETH into ETH", async () => {
         await forkAndImpersonateAtBlock(7347649, TEST_ADDRESS2);
 
         // sETH -(Synthetix)-> sUSD -(1inchAggregator)-> WETH
@@ -606,7 +616,8 @@ describe("Integration: Test Synthswap.sol", function () {
             SUSD_PROXY,
             AGGREGATION_ROUTER_V4,
             ADDRESS_RESOLVER,
-            VOLUME_REWARDS
+            VOLUME_REWARDS,
+            TREASURY_DAO
         );
         await synthswap.deployed();
         
@@ -634,5 +645,53 @@ describe("Integration: Test Synthswap.sol", function () {
         
         const postBalance = await waffle.provider.getBalance(TEST_ADDRESS2);
         expect(postBalance).to.be.above(preBalance);
+    }).timeout(600000);
+
+    it("Test uniswapSwapOutOf sends sUSD to Treasury", async () => {
+        await forkAndImpersonateAtBlock(7347649, TEST_ADDRESS2);
+
+        // sETH -(Synthetix)-> sUSD -(1inchAggregator)-> WETH
+        const SynthSwap = await ethers.getContractFactory("SynthSwap");
+        const synthswap = await SynthSwap.deploy(
+            SUSD_PROXY,
+            AGGREGATION_ROUTER_V4,
+            ADDRESS_RESOLVER,
+            VOLUME_REWARDS,
+            TREASURY_DAO
+        );
+        await synthswap.deployed();
+
+        // must approve synthswap to swap tokens
+        const signer = await ethers.getSigner(TEST_ADDRESS2);
+        const IERC20ABI = (await artifacts.readArtifact("contracts/interfaces/IERC20.sol:IERC20")).abi;
+        const sETH = new ethers.Contract(SETH_PROXY, IERC20ABI, waffle.provider);
+        await sETH.connect(signer).approve(synthswap.address, TEST_VALUE_1);
+        
+        const expectedAmountOfSUSDFromSwap = ethers.BigNumber.from("28000000000000000000");
+        const data = "0xe449022e0000000000000000000000000000000000000000000000014d1120d7b16000000000000000000000000000000000000000000000000000000020523ac1e3127700000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000002000000000000000000000000adb35413ec50e0afe41039eac8b930d313e94fa4a0000000000000000000000095d9d28606ee55de7667f0f176ebfc3215cfd9c0e26b9977";
+        
+        // There IS a discrepancy between X amount of sUSD received from
+        // Synthetix exchange (TEST_VALUE_1 sETH -> X sUSD)
+        // and the expectedAmountOfSUSDFromSwap used for 1inch.
+        // This can occur in either `swapOutOf()` or `uniswapSwapOutOf()`
+        // because expectedAmountOfSUSDFromSwap is not guaranteed to equal X sUSD
+        // received from Synthetix
+        const sUSD = new ethers.Contract(SUSD_PROXY, IERC20ABI, waffle.provider);
+        const preSUSDBalanceOfTreasury = await sUSD.balanceOf(TREASURY_DAO);
+
+        // swap
+		await synthswap.connect(signer).uniswapSwapOutOf(
+            SETH_BYTES32,
+            SETH_PROXY,
+            ETH_ADDRESS,
+            TEST_VALUE_1,
+            expectedAmountOfSUSDFromSwap,
+            data
+        );
+
+        const postSUSDBalanceOfTreasury = await sUSD.balanceOf(TREASURY_DAO);
+        
+        expect(postSUSDBalanceOfTreasury).to.be.above(preSUSDBalanceOfTreasury);
+
     }).timeout(600000);
 });

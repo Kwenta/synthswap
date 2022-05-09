@@ -19,6 +19,7 @@ contract SynthSwap is ISynthSwap {
     IAggregationRouterV4 immutable router;
     IAddressResolver immutable addressResolver;
     address immutable volumeRewards;
+    address immutable treasury;
 
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
@@ -33,12 +34,14 @@ contract SynthSwap is ISynthSwap {
         address _sUSD,
         address _aggregationRouterV4,
         address _addressResolver,
-        address _volumeRewards
+        address _volumeRewards,
+        address _treasury
     ) {
         sUSD = IERC20(_sUSD);
         router = IAggregationRouterV4(_aggregationRouterV4);
         addressResolver = IAddressResolver(_addressResolver);
         volumeRewards = _volumeRewards;
+        treasury = _treasury;
     }
 
     //////////////////////////////////////
@@ -104,6 +107,13 @@ contract SynthSwap is ISynthSwap {
         }
   
         emit SwapOutOf(msg.sender, amountOut);
+
+        // any remaining sUSD in contract should be transferred to treasury
+        uint remainingBalanceSUSD = sUSD.balanceOf(address(this));
+        if (remainingBalanceSUSD > 0) {
+            sUSD.safeTransfer(treasury, remainingBalanceSUSD);
+        }
+
         return amountOut;
     }
 
@@ -192,6 +202,13 @@ contract SynthSwap is ISynthSwap {
         }
 
         emit SwapOutOf(msg.sender, amountOut);
+
+        // any remaining sUSD in contract should be transferred to treasury
+        uint remainingBalanceSUSD = sUSD.balanceOf(address(this));
+        if (remainingBalanceSUSD > 0) {
+            sUSD.safeTransfer(treasury, remainingBalanceSUSD);
+        }
+
         return amountOut;
     }
 
