@@ -8,10 +8,10 @@ import "./interfaces/IAddressResolver.sol";
 import "./interfaces/IAggregationRouterV4.sol";
 import "./interfaces/IAggregationExecutor.sol";
 import "./utils/SafeERC20.sol";
+import "./libraries/RevertReasonParser.sol";
 
 /// @title system to swap synths to/from many erc20 tokens
 /// @dev IAggregationRouterV4 relies on calldata generated off-chain
-/// and IAddressResolver dynamically fetches address for Synthetix
 contract SynthSwap is ISynthSwap {
     using SafeERC20 for IERC20;
 
@@ -27,6 +27,7 @@ contract SynthSwap is ISynthSwap {
 
     event SwapInto(address indexed from, uint amountReceived);
     event SwapOutOf(address indexed from, uint amountReceived);
+    event Received(address from, uint amountReceived);
     
     constructor (
         address _sUSD,
@@ -40,12 +41,12 @@ contract SynthSwap is ISynthSwap {
         volumeRewards = _volumeRewards;
     }
 
-    /// @notice addressResolver fetches ISynthetix address 
-    function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(addressResolver.requireAndGetAddress(
-            CONTRACT_SYNTHETIX, 
-            "Could not get Synthetix"
-        ));
+    //////////////////////////////////////
+    ///////// EXTERNAL FUNCTIONS /////////
+    //////////////////////////////////////
+
+    receive() external payable {
+        emit Received(msg.sender, msg.value);
     }
 
     /// @inheritdoc ISynthSwap
@@ -79,6 +80,8 @@ contract SynthSwap is ISynthSwap {
         uint _sourceAmount,
         bytes calldata _data
     ) external override returns (uint) {
+        IERC20(_sourceSynthAddress).safeTransferFrom(msg.sender, address(this), _sourceAmount);
+
         // if source synth is NOT sUSD, swap on Synthetix is necessary 
         if (_sourceSynthCurrencyKey != sUSD_CURRENCY_KEY) {
             swapOnSynthetix(
@@ -87,19 +90,126 @@ contract SynthSwap is ISynthSwap {
                 sUSD_CURRENCY_KEY, 
                 _sourceSynthAddress
             );
-        } else {
-            sUSD.safeTransferFrom(msg.sender, address(this), _sourceAmount); 
         }
 
         (uint amountOut, address dstToken) = swapOn1inch(_data, true);
-        IERC20(dstToken).safeTransfer(msg.sender, amountOut);
+        
+        if (dstToken == ETH_ADDRESS) {
+            (bool success, bytes memory result) = msg.sender.call{value: amountOut}("");
+            if (!success) {
+                revert(RevertReasonParser.parse(result, "callBytes failed: "));
+            }
+        } else {
+            IERC20(dstToken).safeTransfer(msg.sender, amountOut);
+        }
   
         emit SwapOutOf(msg.sender, amountOut);
         return amountOut;
     }
 
+    /// @inheritdoc ISynthSwap
+    function uniswapSwapInto(
+        bytes32 _destSynthCurrencyKey,
+        address _destSynthAddress,
+        address _sourceTokenAddress,
+        uint _amount,
+        bytes calldata _data
+    ) external payable override returns (uint) {
+        // if not swapping from ETH, transfer source token to contract and approve spending
+        if (_sourceTokenAddress != ETH_ADDRESS) {
+            IERC20(_sourceTokenAddress).safeTransferFrom(msg.sender, address(this), _amount);
+            IERC20(_sourceTokenAddress).safeApprove(address(router), _amount);
+        }
+
+        // swap ETH or source token for sUSD
+        (bool success, bytes memory result) = address(router).call{value: msg.value}(_data);
+        if (!success) {
+            revert(RevertReasonParser.parse(result, "callBytes failed: "));
+        }
+
+         // record amount of sUSD received from swap
+        (uint amountOut) = abi.decode(result, (uint));
+
+        // if destination synth is NOT sUSD, swap on Synthetix is necessary 
+        if (_destSynthCurrencyKey != sUSD_CURRENCY_KEY) {
+            amountOut = swapOnSynthetix(
+                amountOut, 
+                sUSD_CURRENCY_KEY, 
+                _destSynthCurrencyKey, 
+                address(sUSD)
+            );
+        }
+
+        // send amount of destination synth to msg.sender
+        IERC20(_destSynthAddress).safeTransfer(msg.sender, amountOut);
+  
+        emit SwapInto(msg.sender, amountOut);
+        return amountOut;
+    }
+
+    /// @inheritdoc ISynthSwap
+    function uniswapSwapOutOf(
+        bytes32 _sourceSynthCurrencyKey,
+        address _sourceSynthAddress,
+        address _destTokenAddress,
+        uint _amountOfSynth,
+        uint _expectedAmountOfSUSDFromSwap,
+        bytes calldata _data
+    ) external override returns (uint) {
+        // transfer synth to this contract
+        IERC20(_sourceSynthAddress).transferFrom(msg.sender, address(this), _amountOfSynth);
+
+        // if source synth is NOT sUSD, swap on Synthetix is necessary 
+        if (_sourceSynthCurrencyKey != sUSD_CURRENCY_KEY) {
+            swapOnSynthetix(
+                _amountOfSynth, 
+                _sourceSynthCurrencyKey, 
+                sUSD_CURRENCY_KEY, 
+                _sourceSynthAddress
+            );
+        }
+
+        // approve AggregationRouterV4 to spend sUSD
+        sUSD.safeApprove(address(router), _expectedAmountOfSUSDFromSwap);
+
+        // swap sUSD for ETH or destination token
+        (bool success, bytes memory result) = address(router).call(_data);
+        if (!success) {
+            revert(RevertReasonParser.parse(result, "SynthSwap: callBytes failed: "));
+        }
+
+        // record amount of ETH or destination token received from swap
+        (uint amountOut) = abi.decode(result, (uint));
+        
+        // send amount of ETH or destination token to msg.sender
+        if (_destTokenAddress == ETH_ADDRESS) {
+            (success, result) = msg.sender.call{value: amountOut}("");
+            if (!success) {
+            revert(RevertReasonParser.parse(result, "SynthSwap: callBytes failed: "));
+        }
+        } else {
+            IERC20(_destTokenAddress).safeTransfer(msg.sender, amountOut);
+        }
+
+        emit SwapOutOf(msg.sender, amountOut);
+        return amountOut;
+    }
+
+    //////////////////////////////////////
+    ///////// INTERNAL FUNCTIONS /////////
+    //////////////////////////////////////
+
+    /// @notice addressResolver fetches ISynthetix address 
+    function synthetix() internal view returns (ISynthetix) {
+        return ISynthetix(addressResolver.requireAndGetAddress(
+            CONTRACT_SYNTHETIX, 
+            "Could not get Synthetix"
+        ));
+    }
+
     /// @notice execute swap on 1inch
     /// @dev token approval needed when source is not ETH
+    /// @dev either source or destination token will ALWAYS be sUSD
     /// @param _data specifying swap data
     /// @param _areTokensInContract TODO
     /// @return amount received from 1inch swap
@@ -124,11 +234,9 @@ contract SynthSwap is ISynthSwap {
         // set swap description destination address to this contract
         desc.dstReceiver = payable(address(this));
 
-        bool isETH = ETH_ADDRESS == desc.srcToken;
-        if (!isETH) {
-            // if TODO
+        if (desc.srcToken != ETH_ADDRESS) {
+            // if being called from swapInto, tokens have not been transfered to this contract
             if (!_areTokensInContract) {
-                // transfer token to this contract
                 IERC20(desc.srcToken).safeTransferFrom(msg.sender, address(this), desc.amount);
             }
             // approve AggregationRouterV4 to spend srcToken
