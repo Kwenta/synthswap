@@ -86,8 +86,7 @@ Problem (swapOutOf)
    different from what is returned in (2.2) Z?
 
 Solutions:
-1. Have check in contract which reverts if values are different (easy)
-2. IFF Y != Z, adjust SwapDescription.amount (more complexity) (Will this break the swap data used by 1inch if the difference is too large?)
+1. Have check in contract which reverts if values are different. Need to consider how often this might revert swaps...
 
 Problem 
 1. 1inch is pretty buggy swapping with sUSD. Recalculations, slippage, etc are very common
