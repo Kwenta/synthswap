@@ -23,7 +23,6 @@
         "typescript": "^4.3.5"
     },
     "dependencies": {
-        "dotenv": "^10.0.0",
-        "hardhat-tracer": "^1.1.0-rc.3"
+        "dotenv": "^10.0.0"
     }
 }
