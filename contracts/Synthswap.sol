@@ -8,11 +8,12 @@ import "./interfaces/IAddressResolver.sol";
 import "./interfaces/IAggregationRouterV4.sol";
 import "./interfaces/IAggregationExecutor.sol";
 import "./utils/SafeERC20.sol";
+import "./utils/Owned.sol";
 import "./libraries/RevertReasonParser.sol";
 
 /// @title system to swap synths to/from many erc20 tokens
 /// @dev IAggregationRouterV4 relies on calldata generated off-chain
-contract SynthSwap is ISynthSwap {
+contract SynthSwap is ISynthSwap, Owned {
     using SafeERC20 for IERC20;
 
     IERC20 immutable sUSD;
@@ -31,12 +32,13 @@ contract SynthSwap is ISynthSwap {
     event Received(address from, uint amountReceived);
     
     constructor (
+        address _owner,
         address _sUSD,
         address _aggregationRouterV4,
         address _addressResolver,
         address _volumeRewards,
         address _treasury
-    ) {
+    ) Owned(_owner) {
         sUSD = IERC20(_sUSD);
         router = IAggregationRouterV4(_aggregationRouterV4);
         addressResolver = IAddressResolver(_addressResolver);
@@ -210,6 +212,11 @@ contract SynthSwap is ISynthSwap {
         }
 
         return amountOut;
+    }
+
+    /// @notice owner possesses ability to rescue tokens locked within contract 
+    function rescueFunds(IERC20 token, uint256 amount) external onlyOwner {
+        token.safeTransfer(msg.sender, amount);
     }
 
     //////////////////////////////////////
