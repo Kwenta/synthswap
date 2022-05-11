@@ -9,11 +9,12 @@ import "./interfaces/IAggregationRouterV4.sol";
 import "./interfaces/IAggregationExecutor.sol";
 import "./utils/SafeERC20.sol";
 import "./utils/Owned.sol";
+import "./utils/ReentrancyGuard.sol";
 import "./libraries/RevertReasonParser.sol";
 
 /// @title system to swap synths to/from many erc20 tokens
 /// @dev IAggregationRouterV4 relies on calldata generated off-chain
-contract SynthSwap is ISynthSwap, Owned {
+contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     IERC20 immutable sUSD;
@@ -83,7 +84,7 @@ contract SynthSwap is ISynthSwap, Owned {
         bytes32 _sourceSynthCurrencyKey,
         uint _sourceAmount,
         bytes calldata _data
-    ) external override returns (uint) {
+    ) external override nonReentrant returns (uint) {
         // transfer synth to this contract
         address sourceSynthAddress = addressResolver.getSynth(_sourceSynthCurrencyKey);
         IERC20(sourceSynthAddress).safeTransferFrom(msg.sender, address(this), _sourceAmount);
@@ -167,7 +168,7 @@ contract SynthSwap is ISynthSwap, Owned {
         uint _amountOfSynth,
         uint _expectedAmountOfSUSDFromSwap,
         bytes calldata _data
-    ) external override returns (uint) {
+    ) external override nonReentrant returns (uint) {
         // transfer synth to this contract
         address sourceSynthAddress = addressResolver.getSynth(_sourceSynthCurrencyKey);
         IERC20(sourceSynthAddress).transferFrom(msg.sender, address(this), _amountOfSynth);
