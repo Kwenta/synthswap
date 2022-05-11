@@ -177,7 +177,6 @@ describe("Integration: Test Synthswap.sol", function () {
 
         const SynthSwap = await ethers.getContractFactory("SynthSwap");
         const synthswap = await SynthSwap.deploy(
-            TEST_ADDRESS, // owner
             SUSD_PROXY,
             AGGREGATION_ROUTER_V4,
             ADDRESS_RESOLVER,
@@ -191,9 +190,10 @@ describe("Integration: Test Synthswap.sol", function () {
     it("Test rescue tokens", async () => {
         await forkAndImpersonateAtBlock(6950543, TEST_ADDRESS);
 
+        const signer = await ethers.getSigner(TEST_ADDRESS);
+
         const SynthSwap = await ethers.getContractFactory("SynthSwap");
-        const synthswap = await SynthSwap.deploy(
-            TEST_ADDRESS, // owner
+        const synthswap = await SynthSwap.connect(signer).deploy(
             SUSD_PROXY,
             AGGREGATION_ROUTER_V4,
             ADDRESS_RESOLVER,
@@ -207,7 +207,6 @@ describe("Integration: Test Synthswap.sol", function () {
         const WETH = new ethers.Contract(WETH_ADDRESS, IERC20ABI, waffle.provider);
         const preBalance = await WETH.balanceOf(TEST_ADDRESS);
 
-        const signer = await ethers.getSigner(TEST_ADDRESS);
         await WETH.connect(signer).transferFrom(TEST_ADDRESS, synthswap.address, TEST_VALUE_1);
 
         // post-balance
@@ -231,7 +230,6 @@ describe("Integration: Test Synthswap.sol", function () {
         // ETH -(1inchAggregator)-> sUSD -(Synthetix)-> sETH
         const SynthSwap = await ethers.getContractFactory("SynthSwap");
         const synthswap = await SynthSwap.deploy(
-            TEST_ADDRESS, // owner
             SUSD_PROXY,
             AGGREGATION_ROUTER_V4,
             ADDRESS_RESOLVER,
@@ -287,7 +285,6 @@ describe("Integration: Test Synthswap.sol", function () {
         // ETH -(1inchAggregator)-> sUSD -(Synthetix)-> sLINK
         const SynthSwap = await ethers.getContractFactory("SynthSwap");
         const synthswap = await SynthSwap.deploy(
-            TEST_ADDRESS, // owner
             SUSD_PROXY,
             AGGREGATION_ROUTER_V4,
             ADDRESS_RESOLVER,
@@ -343,7 +340,6 @@ describe("Integration: Test Synthswap.sol", function () {
         // WETH -(1inchAggregator)-> sUSD -(Synthetix)-> sLINK
         const SynthSwap = await ethers.getContractFactory("SynthSwap");
         const synthswap = await SynthSwap.deploy(
-            TEST_ADDRESS, // owner
             SUSD_PROXY,
             AGGREGATION_ROUTER_V4,
             ADDRESS_RESOLVER,
@@ -400,7 +396,6 @@ describe("Integration: Test Synthswap.sol", function () {
         // WETH -(1inchAggregator)-> sUSD
         const SynthSwap = await ethers.getContractFactory("SynthSwap");
         const synthswap = await SynthSwap.deploy(
-            TEST_ADDRESS, // owner
             SUSD_PROXY,
             AGGREGATION_ROUTER_V4,
             ADDRESS_RESOLVER,
@@ -461,7 +456,6 @@ describe("Integration: Test Synthswap.sol", function () {
         // sUSD -(1inchAggregator)-> WETH
         const SynthSwap = await ethers.getContractFactory("SynthSwap");
         const synthswap = await SynthSwap.deploy(
-            TEST_ADDRESS2, // owner
             SUSD_PROXY,
             AGGREGATION_ROUTER_V4,
             ADDRESS_RESOLVER,
@@ -519,7 +513,6 @@ describe("Integration: Test Synthswap.sol", function () {
         // sETH -(Synthetix)-> sUSD -(1inchAggregator)-> WETH
         const SynthSwap = await ethers.getContractFactory("SynthSwap");
         const synthswap = await SynthSwap.deploy(
-            TEST_ADDRESS2, // owner
             SUSD_PROXY,
             AGGREGATION_ROUTER_V4,
             ADDRESS_RESOLVER,
@@ -579,7 +572,6 @@ describe("Integration: Test Synthswap.sol", function () {
         // sETH -(Synthetix)-> sUSD -(1inchAggregator)-> WETH
         const SynthSwap = await ethers.getContractFactory("SynthSwap");
         const synthswap = await SynthSwap.deploy(
-            TEST_ADDRESS2, // owner
             SUSD_PROXY,
             AGGREGATION_ROUTER_V4,
             ADDRESS_RESOLVER,
@@ -647,7 +639,6 @@ describe("Integration: Test Synthswap.sol", function () {
         // sETH -(Synthetix)-> sUSD -(1inchAggregator)-> WETH
         const SynthSwap = await ethers.getContractFactory("SynthSwap");
         const synthswap = await SynthSwap.deploy(
-            TEST_ADDRESS2, // owner
             SUSD_PROXY,
             AGGREGATION_ROUTER_V4,
             ADDRESS_RESOLVER,
@@ -687,7 +678,6 @@ describe("Integration: Test Synthswap.sol", function () {
         // sETH -(Synthetix)-> sUSD -(1inchAggregator)-> WETH
         const SynthSwap = await ethers.getContractFactory("SynthSwap");
         const synthswap = await SynthSwap.deploy(
-            TEST_ADDRESS2, // owner
             SUSD_PROXY,
             AGGREGATION_ROUTER_V4,
             ADDRESS_RESOLVER,

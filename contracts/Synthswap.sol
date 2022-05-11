@@ -33,13 +33,12 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
     event Received(address from, uint amountReceived);
     
     constructor (
-        address _owner,
         address _sUSD,
         address _aggregationRouterV4,
         address _addressResolver,
         address _volumeRewards,
         address _treasury
-    ) Owned(_owner) {
+    ) Owned(msg.sender) {
         sUSD = IERC20(_sUSD);
         router = IAggregationRouterV4(_aggregationRouterV4);
         addressResolver = IAddressResolver(_addressResolver);
