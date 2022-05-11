@@ -5,9 +5,12 @@
 // Runtime Environment's members available in the global scope.
 const hre = require("hardhat");
 
-const SYNTHETIX_PROXY = "0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F";
-const SUSD_PROXY = "0x57Ab1E02fEE23774580C119740129eAC7081e9D3";
-const AGGREGATION_ROUTER_V3 = "0x11111112542D85B3EF69AE05771c2dCCff4fAa26";
+// constructor variables
+const SYNTHETIX_PROXY = "0x8700dAec35aF8Ff88c16BdF0418774CB3D7599B4"; // ProxyERC20
+const SUSD_PROXY = "0x8c6f28f2F1A3C87F0f938b96d27520d9751ec8d9"; // ProxyERC20sUSD
+const VOLUME_REWARDS = hre.ethers.constants.AddressZero;
+const AGGREGATION_ROUTER_V4 = "0x1111111254760f7ab3f16433eea9304126dcd199";
+const ADDRESS_RESOLVER = "0x95A6a3f44a70172E7d50a9e28c85Dfd712756B8C";
 
 async function main() {
     // Hardhat always runs the compile task when running scripts with its command
@@ -20,13 +23,12 @@ async function main() {
     // We get the contract to deploy
     const SynthSwap = await hre.ethers.getContractFactory("SynthSwap");
     const synthswap = await SynthSwap.deploy(
-        hre.ethers.constants.AddressZero,
         SYNTHETIX_PROXY,
         SUSD_PROXY,
-        hre.ethers.constants.AddressZero,
-        AGGREGATION_ROUTER_V3
+        VOLUME_REWARDS,
+        AGGREGATION_ROUTER_V4,
+        ADDRESS_RESOLVER
     );
-
     await synthswap.deployed();
 
     console.log("Synthswap deployed to:", synthswap.address);
