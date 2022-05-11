@@ -1,4 +1,7 @@
 {
+    "name": "synthswap",
+    "version": "1.0.0",
+    "main": "index.js",
     "scripts": {
         "fork": "npx hardhat node --fork $(grep ARCHIVE_NODE_URL .env | cut -d '=' -f2) --fork-block-number 1234465",
         "deploy:fork": "npx hardhat run --network localhost scripts/deploy.ts",

@@ -225,7 +225,7 @@ describe("Integration: Test Synthswap.sol", function () {
     ////// swapInto() //////
     ////////////////////////
 
-    it.skip("Test swap ETH into sETH", async () => {
+    it("Test swap ETH into sETH", async () => {
         await forkAndImpersonateAtBlock(6950543, TEST_ADDRESS);
 
         // ETH -(1inchAggregator)-> sUSD -(Synthetix)-> sETH
@@ -271,7 +271,6 @@ describe("Integration: Test Synthswap.sol", function () {
         const signer = await ethers.getSigner(TEST_ADDRESS);
 		await synthswap.connect(signer).swapInto(
             SETH_BYTES32,
-            SETH_PROXY,
             data, 
             {
 				value: TEST_VALUE_1,
@@ -282,7 +281,7 @@ describe("Integration: Test Synthswap.sol", function () {
         expect(postBalance).to.be.above(preBalance);
     }).timeout(600000);
 
-    it.skip("Test swap ETH into sLINK", async () => {
+    it("Test swap ETH into sLINK", async () => {
         await forkAndImpersonateAtBlock(6950543, TEST_ADDRESS);
 
         // ETH -(1inchAggregator)-> sUSD -(Synthetix)-> sLINK
@@ -328,7 +327,6 @@ describe("Integration: Test Synthswap.sol", function () {
         const signer = await ethers.getSigner(TEST_ADDRESS);
 		await synthswap.connect(signer).swapInto(
             SLINK_BYTES32,
-            SLINK_PROXY,
             data, 
             {
 				value: TEST_VALUE_1,
@@ -339,7 +337,7 @@ describe("Integration: Test Synthswap.sol", function () {
         expect(postBalance).to.be.above(preBalance);
     }).timeout(600000);
 
-    it.skip("Test swap WETH into sLINK", async () => {
+    it("Test swap WETH into sLINK", async () => {
         await forkAndImpersonateAtBlock(7161862, TEST_ADDRESS);
 
         // WETH -(1inchAggregator)-> sUSD -(Synthetix)-> sLINK
@@ -389,7 +387,6 @@ describe("Integration: Test Synthswap.sol", function () {
         // swap
 		await synthswap.connect(signer).swapInto(
             SLINK_BYTES32,
-            SLINK_PROXY,
             data
         );
         
@@ -397,7 +394,7 @@ describe("Integration: Test Synthswap.sol", function () {
         expect(postBalance).to.be.above(preBalance);
     }).timeout(600000);
 
-    it.skip("Test swap WETH into sUSD", async () => {
+    it("Test swap WETH into sUSD", async () => {
         await forkAndImpersonateAtBlock(7161861, TEST_ADDRESS);
 
         // WETH -(1inchAggregator)-> sUSD
@@ -447,7 +444,6 @@ describe("Integration: Test Synthswap.sol", function () {
         // swap
 		await synthswap.connect(signer).swapInto(
             SUSD_BYTES32,
-            SUSD_PROXY,
             data
         );
         
@@ -459,7 +455,7 @@ describe("Integration: Test Synthswap.sol", function () {
     ////// swapOutOf() /////
     ////////////////////////
 
-    it.skip("Test swap sUSD into WETH", async () => {   
+    it("Test swap sUSD into WETH", async () => {   
         await forkAndImpersonateAtBlock(7247381, TEST_ADDRESS2);
 
         // sUSD -(1inchAggregator)-> WETH
@@ -509,7 +505,6 @@ describe("Integration: Test Synthswap.sol", function () {
         // swap
 		await synthswap.connect(signer).swapOutOf(
             SUSD_BYTES32,
-            SUSD_PROXY,
             TEST_VALUE_2,
             data
         );
@@ -518,7 +513,7 @@ describe("Integration: Test Synthswap.sol", function () {
         expect(postBalance).to.be.above(preBalance);
     }).timeout(600000);
 
-    it.skip("Test swap sETH into WETH", async () => {
+    it("Test swap sETH into WETH", async () => {
         await forkAndImpersonateAtBlock(7327867, TEST_ADDRESS2);
 
         // sETH -(Synthetix)-> sUSD -(1inchAggregator)-> WETH
@@ -569,7 +564,6 @@ describe("Integration: Test Synthswap.sol", function () {
         // swap
 		await synthswap.connect(signer).swapOutOf(
             SETH_BYTES32,
-            SETH_PROXY,
             TEST_VALUE_1,
             data
         );
@@ -629,7 +623,6 @@ describe("Integration: Test Synthswap.sol", function () {
         // swap
 		await synthswap.connect(signer).swapOutOf(
             SETH_BYTES32,
-            SETH_PROXY,
             TEST_VALUE_1,
             data
         );
@@ -642,13 +635,13 @@ describe("Integration: Test Synthswap.sol", function () {
     /// uniswapSwapInto ////
     ////////////////////////
 
-    // TODOs
+    // TODO
 
     ////////////////////////
     /// uniswapSwapOutOf ///
     ////////////////////////
 
-    it.skip("Test uniswapSwapOutOf sETH into ETH", async () => {
+    it("Test uniswapSwapOutOf sETH into ETH", async () => {
         await forkAndImpersonateAtBlock(7347649, TEST_ADDRESS2);
 
         // sETH -(Synthetix)-> sUSD -(1inchAggregator)-> WETH
@@ -678,7 +671,6 @@ describe("Integration: Test Synthswap.sol", function () {
         // swap
 		await synthswap.connect(signer).uniswapSwapOutOf(
             SETH_BYTES32,
-            SETH_PROXY,
             ETH_ADDRESS,
             TEST_VALUE_1,
             expectedAmountOfSUSDFromSwap,
@@ -689,7 +681,7 @@ describe("Integration: Test Synthswap.sol", function () {
         expect(postBalance).to.be.above(preBalance);
     }).timeout(600000);
 
-    it.skip("Test uniswapSwapOutOf sends sUSD to Treasury", async () => {
+    it("Test uniswapSwapOutOf sends sUSD to Treasury", async () => {
         await forkAndImpersonateAtBlock(7347649, TEST_ADDRESS2);
 
         // sETH -(Synthetix)-> sUSD -(1inchAggregator)-> WETH
@@ -725,7 +717,6 @@ describe("Integration: Test Synthswap.sol", function () {
         // swap
 		await synthswap.connect(signer).uniswapSwapOutOf(
             SETH_BYTES32,
-            SETH_PROXY,
             ETH_ADDRESS,
             TEST_VALUE_1,
             expectedAmountOfSUSDFromSwap,

@@ -57,7 +57,6 @@ contract SynthSwap is ISynthSwap, Owned {
     /// @inheritdoc ISynthSwap
     function swapInto(
         bytes32 _destSynthCurrencyKey,
-        address _destSynthAddress,
         bytes calldata _data
     ) external payable override returns (uint) {
         (uint amountOut,) = swapOn1inch(_data, false);
@@ -65,14 +64,15 @@ contract SynthSwap is ISynthSwap, Owned {
         // if destination synth is NOT sUSD, swap on Synthetix is necessary 
         if (_destSynthCurrencyKey != sUSD_CURRENCY_KEY) {
             amountOut = swapOnSynthetix(
-                amountOut, 
-                sUSD_CURRENCY_KEY, 
-                _destSynthCurrencyKey, 
+                amountOut,
+                sUSD_CURRENCY_KEY,
+                _destSynthCurrencyKey,
                 address(sUSD)
             );
         }
 
-        IERC20(_destSynthAddress).safeTransfer(msg.sender, amountOut);
+        address destSynthAddress = addressResolver.getSynth(_destSynthCurrencyKey);
+        IERC20(destSynthAddress).safeTransfer(msg.sender, amountOut);
   
         emit SwapInto(msg.sender, amountOut);
         return amountOut;
@@ -81,11 +81,12 @@ contract SynthSwap is ISynthSwap, Owned {
     /// @inheritdoc ISynthSwap
     function swapOutOf(
         bytes32 _sourceSynthCurrencyKey,
-        address _sourceSynthAddress,
         uint _sourceAmount,
         bytes calldata _data
     ) external override returns (uint) {
-        IERC20(_sourceSynthAddress).safeTransferFrom(msg.sender, address(this), _sourceAmount);
+        // transfer synth to this contract
+        address sourceSynthAddress = addressResolver.getSynth(_sourceSynthCurrencyKey);
+        IERC20(sourceSynthAddress).safeTransferFrom(msg.sender, address(this), _sourceAmount);
 
         // if source synth is NOT sUSD, swap on Synthetix is necessary 
         if (_sourceSynthCurrencyKey != sUSD_CURRENCY_KEY) {
@@ -93,7 +94,7 @@ contract SynthSwap is ISynthSwap, Owned {
                 _sourceAmount, 
                 _sourceSynthCurrencyKey, 
                 sUSD_CURRENCY_KEY, 
-                _sourceSynthAddress
+                sourceSynthAddress
             );
         }
 
@@ -122,7 +123,6 @@ contract SynthSwap is ISynthSwap, Owned {
     /// @inheritdoc ISynthSwap
     function uniswapSwapInto(
         bytes32 _destSynthCurrencyKey,
-        address _destSynthAddress,
         address _sourceTokenAddress,
         uint _amount,
         bytes calldata _data
@@ -153,7 +153,8 @@ contract SynthSwap is ISynthSwap, Owned {
         }
 
         // send amount of destination synth to msg.sender
-        IERC20(_destSynthAddress).safeTransfer(msg.sender, amountOut);
+        address destSynthAddress = addressResolver.getSynth(_destSynthCurrencyKey);
+        IERC20(destSynthAddress).safeTransfer(msg.sender, amountOut);
   
         emit SwapInto(msg.sender, amountOut);
         return amountOut;
@@ -162,14 +163,14 @@ contract SynthSwap is ISynthSwap, Owned {
     /// @inheritdoc ISynthSwap
     function uniswapSwapOutOf(
         bytes32 _sourceSynthCurrencyKey,
-        address _sourceSynthAddress,
         address _destTokenAddress,
         uint _amountOfSynth,
         uint _expectedAmountOfSUSDFromSwap,
         bytes calldata _data
     ) external override returns (uint) {
         // transfer synth to this contract
-        IERC20(_sourceSynthAddress).transferFrom(msg.sender, address(this), _amountOfSynth);
+        address sourceSynthAddress = addressResolver.getSynth(_sourceSynthCurrencyKey);
+        IERC20(sourceSynthAddress).transferFrom(msg.sender, address(this), _amountOfSynth);
 
         // if source synth is NOT sUSD, swap on Synthetix is necessary 
         if (_sourceSynthCurrencyKey != sUSD_CURRENCY_KEY) {
@@ -177,7 +178,7 @@ contract SynthSwap is ISynthSwap, Owned {
                 _amountOfSynth, 
                 _sourceSynthCurrencyKey, 
                 sUSD_CURRENCY_KEY, 
-                _sourceSynthAddress
+                sourceSynthAddress
             );
         }
 
