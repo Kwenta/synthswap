@@ -17,9 +17,10 @@ const uniswapV3SwapFuncSelector = 'e449022e000000000000000000000000';
 /// getFormatedSwapData returns data required by SynthSwap to execute swaps
 /// @param response: from /v4.0/10/swap
 /// @param synthwapAddress: address of deployed SynthSwap contract
-/// @returns Object: {functionSelector, data}
-///  - functionSelector: function intended to be used by 1inch for swap
-///  - data: route data for swap on 1inch
+/// @returns Object: {
+/// 		functionSelector (function intended to be used by 1inch for swap),
+///     	data (route data for swap on 1inch)
+/// 	}
 const getFormatedSwapData = (response, synthswapAddress) => {
 	if (synthswapAddress.length !== 42) {
 		throw 'Invalid SynthSwap Address';
