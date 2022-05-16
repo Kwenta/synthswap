@@ -1,6 +1,6 @@
 {
     "name": "@kwenta/synthswap",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "main": "utils/index.js",
     "scripts": {
         "fork": "npx hardhat node --fork $(grep ARCHIVE_NODE_URL .env | cut -d '=' -f2) --fork-block-number 1234465",
