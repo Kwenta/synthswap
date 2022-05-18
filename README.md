@@ -56,3 +56,8 @@ To run integration tests:
 ```
 npm run test:integration
 ```
+
+To run utils tests:
+```
+npm run test:utils
+```
