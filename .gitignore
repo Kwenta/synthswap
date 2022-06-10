@@ -7,3 +7,5 @@ artifacts
 
 package-lock*
 .vscode/settings.json
+
+deployments/localhost

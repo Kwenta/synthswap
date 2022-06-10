@@ -8,7 +8,9 @@
   },
   "include": [
     "./scripts",
-    "./test"
+    "./test",
+    "./deploy",
+    "./hardhat.config.ts"
   ],
   "files": [
     "./hardhat.config.ts"
