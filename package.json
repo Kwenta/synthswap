@@ -12,7 +12,7 @@
         "test": "npx hardhat test",
         "test:unit": "npx hardhat test test/unit/*",
         "test:integration": "npx hardhat test test/integration/*",
-        "test:utils": "node utils/getFormatedSwapData.test.js"
+        "test:utils": "node utils/getFormattedSwapData.test.js"
     },
     "repository": {
         "type": "git",

@@ -14,14 +14,14 @@ const uniswapV3SwapFuncSelector = 'e449022e000000000000000000000000';
 // Swagger API: 
 // https://docs.1inch.io/docs/aggregation-protocol/api/swagger
 
-/// getFormatedSwapData returns data required by SynthSwap to execute swaps
+/// getFormattedSwapData returns data required by SynthSwap to execute swaps
 /// @param response: from /v4.0/10/swap
 /// @param synthwapAddress: address of deployed SynthSwap contract
 /// @returns Object: {
 /// 		functionSelector (function intended to be used by 1inch for swap),
 ///     	data (route data for swap on 1inch)
 /// 	}
-const getFormatedSwapData = (response, synthswapAddress) => {
+const getFormattedSwapData = (response, synthswapAddress) => {
 	if (synthswapAddress.length !== 42) {
 		throw 'Invalid SynthSwap Address';
 	}
@@ -87,7 +87,7 @@ const getFormatedSwapData = (response, synthswapAddress) => {
 	}
 };
 
-module.exports = getFormatedSwapData;
+module.exports = getFormattedSwapData;
 
 /* EXAMPLES
 

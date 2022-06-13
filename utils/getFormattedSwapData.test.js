@@ -1,4 +1,4 @@
-const getFormatedSwapData = require('@jaredborders/synthswap-utils');
+const getFormattedSwapData = require('@jaredborders/synthswap-utils');
 
 const testResponse1 = {
 	fromToken: {
@@ -127,7 +127,7 @@ const testResponse2 = {
 	},
 };
 
-let uniswapTestResult = getFormatedSwapData(
+let uniswapTestResult = getFormattedSwapData(
 	testResponse1,
 	'0x6e1768574dC439aE6ffCd2b0A0f218105f2612c6'
 );
@@ -135,7 +135,7 @@ let uniswapTestResult = getFormatedSwapData(
 console.log("\n\nfunctionSelector: \n" + uniswapTestResult.functionSelector);
 console.log("data: \n" + uniswapTestResult.data);
 
-let swapTestResult = getFormatedSwapData(
+let swapTestResult = getFormattedSwapData(
 	testResponse2,
 	'0x6e1768574dC439aE6ffCd2b0A0f218105f2612c6'
 );
