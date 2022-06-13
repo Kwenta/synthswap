@@ -2,7 +2,7 @@ How to use:
 
 Example:
 ```
-let result = getFormatedSwapData(
+let result = getFormattedSwapData(
 	1inchAPISwapResponse,
 	synthswapAddress
 );
