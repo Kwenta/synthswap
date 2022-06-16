@@ -1,6 +1,7 @@
 import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-waffle";
 import "hardhat-deploy";
+import "hardhat-interact";
 import dotenv from "dotenv";
 
 dotenv.config();

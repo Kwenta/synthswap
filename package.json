@@ -22,7 +22,7 @@
         "node": ">=14.0.0"
     },
     "devDependencies": {
-        "@nomiclabs/hardhat-ethers": "^2.0.2",
+        "@nomiclabs/hardhat-ethers": "^2.0.6",
         "@nomiclabs/hardhat-waffle": "^2.0.1",
         "@types/chai": "^4.2.21",
         "@types/mocha": "^9.0.0",
@@ -32,6 +32,7 @@
         "ethers": "^5.4.5",
         "hardhat": "^2.6.3",
         "hardhat-deploy": "0.11.4",
+        "hardhat-interact": "^0.2.3",
         "ts-node": "^10.2.1",
         "typescript": "^4.3.5"
     },
