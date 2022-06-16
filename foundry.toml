@@ -1,0 +1,13 @@
+[default]
+src = 'contracts'
+out = 'artifacts'
+test = 'test'
+libs = ['lib', 'node_modules']
+remappings = [
+    '@ensdomains/=node_modules/@ensdomains/',
+    'hardhat-deploy/=node_modules/hardhat-deploy/',
+    'hardhat/=node_modules/hardhat/',
+]
+solc = "0.8.4"
+
+# See more config options https://github.com/gakonst/foundry/tree/master/config

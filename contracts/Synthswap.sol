@@ -71,7 +71,7 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
             );
         }
 
-        address destSynthAddress = addressResolver.getSynth(_destSynthCurrencyKey);
+        address destSynthAddress = proxyForSynth(addressResolver.getSynth(_destSynthCurrencyKey));
         IERC20(destSynthAddress).safeTransfer(msg.sender, amountOut);
   
         emit SwapInto(msg.sender, amountOut);
@@ -85,7 +85,7 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
         bytes calldata _data
     ) external override nonReentrant returns (uint) {
         // transfer synth to this contract
-        address sourceSynthAddress = addressResolver.getSynth(_sourceSynthCurrencyKey);
+        address sourceSynthAddress = proxyForSynth(addressResolver.getSynth(_sourceSynthCurrencyKey));
         IERC20(sourceSynthAddress).safeTransferFrom(msg.sender, address(this), _sourceAmount);
 
         // if source synth is NOT sUSD, swap on Synthetix is necessary 
@@ -153,7 +153,7 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
         }
 
         // send amount of destination synth to msg.sender
-        address destSynthAddress = addressResolver.getSynth(_destSynthCurrencyKey);
+        address destSynthAddress = proxyForSynth(addressResolver.getSynth(_destSynthCurrencyKey));
         IERC20(destSynthAddress).safeTransfer(msg.sender, amountOut);
   
         emit SwapInto(msg.sender, amountOut);
@@ -169,7 +169,7 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
         bytes calldata _data
     ) external override nonReentrant returns (uint) {
         // transfer synth to this contract
-        address sourceSynthAddress = addressResolver.getSynth(_sourceSynthCurrencyKey);
+        address sourceSynthAddress = proxyForSynth(addressResolver.getSynth(_sourceSynthCurrencyKey));
         IERC20(sourceSynthAddress).transferFrom(msg.sender, address(this), _amountOfSynth);
 
         // if source synth is NOT sUSD, swap on Synthetix is necessary 
@@ -302,6 +302,16 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
 
         require(amountOut > 0, "SynthSwap: swapOnSynthetix failed");
         return amountOut;
+    }
+
+    /// @notice get the proxy address from the synth implementation contract
+    /// @dev only possible because Synthetix synths inherit Proxyable which track proxy()
+    /// @param synthImplementation synth implementation address
+    /// @return synthProxy proxy address
+    function proxyForSynth(address synthImplementation) public returns (address synthProxy) {
+        (bool success, bytes memory retVal) = synthImplementation.call(abi.encodeWithSignature("proxy()"));
+        require(success, "get Proxy address failed");
+        (synthProxy) = abi.decode(retVal, (address));
     }
 
 }
