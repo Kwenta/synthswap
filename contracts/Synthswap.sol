@@ -66,8 +66,7 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
             amountOut = swapOnSynthetix(
                 amountOut,
                 sUSD_CURRENCY_KEY,
-                _destSynthCurrencyKey,
-                address(sUSD)
+                _destSynthCurrencyKey
             );
         }
 
@@ -93,8 +92,7 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
             swapOnSynthetix(
                 _sourceAmount, 
                 _sourceSynthCurrencyKey, 
-                sUSD_CURRENCY_KEY, 
-                sourceSynthAddress
+                sUSD_CURRENCY_KEY
             );
         }
 
@@ -147,8 +145,7 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
             amountOut = swapOnSynthetix(
                 amountOut, 
                 sUSD_CURRENCY_KEY, 
-                _destSynthCurrencyKey, 
-                address(sUSD)
+                _destSynthCurrencyKey
             );
         }
 
@@ -177,8 +174,7 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
             swapOnSynthetix(
                 _amountOfSynth, 
                 _sourceSynthCurrencyKey, 
-                sUSD_CURRENCY_KEY, 
-                sourceSynthAddress
+                sUSD_CURRENCY_KEY
             );
         }
 
@@ -280,13 +276,11 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
     /// @param _amount of source synth to swap
     /// @param _sourceSynthCurrencyKey source synth key needed for exchange
     /// @param _destSynthCurrencyKey destination synth key needed for exchange
-    /// @param _sourceSynthAddress source synth address needed for approval
     /// @return amountOut: received from Synthetix swap
     function swapOnSynthetix(
         uint _amount,
         bytes32 _sourceSynthCurrencyKey,
-        bytes32 _destSynthCurrencyKey,
-        address _sourceSynthAddress
+        bytes32 _destSynthCurrencyKey
     ) internal returns (uint) {
         // execute Synthetix swap
         uint amountOut = synthetix().exchangeWithTracking(
