@@ -288,9 +288,6 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
         bytes32 _destSynthCurrencyKey,
         address _sourceSynthAddress
     ) internal returns (uint) {
-        //  approve Synthetix to spend sourceSynth
-        IERC20(_sourceSynthAddress).safeApprove(address(synthetix()), _amount);
-
         // execute Synthetix swap
         uint amountOut = synthetix().exchangeWithTracking(
             _sourceSynthCurrencyKey,
