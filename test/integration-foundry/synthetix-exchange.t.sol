@@ -26,6 +26,8 @@ contract SynthSwapTest is DSTest {
         );
     }
 
+    // @notice this was written to confirm we can grab the proxy from a synth implementation contract (and more importantly the address resikver)
+    // @dev FOR THIS TEST TO WORK `proxyForSynth` must be changed from internal to public
     function testProxyForSynth() public {
         assertEq(synthswap.proxyForSynth(0xDfA2d3a0d32F870D87f8A0d7AA6b9CdEB7bc5AdB), 0x8c6f28f2F1A3C87F0f938b96d27520d9751ec8d9);
     }

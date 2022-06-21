@@ -299,7 +299,7 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
     /// @dev only possible because Synthetix synths inherit Proxyable which track proxy()
     /// @param synthImplementation synth implementation address
     /// @return synthProxy proxy address
-    function proxyForSynth(address synthImplementation) public returns (address synthProxy) {
+    function proxyForSynth(address synthImplementation) internal returns (address synthProxy) {
         (bool success, bytes memory retVal) = synthImplementation.call(abi.encodeWithSignature("proxy()"));
         require(success, "get Proxy address failed");
         (synthProxy) = abi.decode(retVal, (address));
