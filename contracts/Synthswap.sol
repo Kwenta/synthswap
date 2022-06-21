@@ -128,7 +128,7 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
         // if not swapping from ETH, transfer source token to contract and approve spending
         if (_sourceTokenAddress != ETH_ADDRESS) {
             IERC20(_sourceTokenAddress).safeTransferFrom(msg.sender, address(this), _amount);
-            IERC20(_sourceTokenAddress).safeApprove(address(router), _amount);
+            IERC20(_sourceTokenAddress).approve(address(router), _amount);
         }
 
         // swap ETH or source token for sUSD
@@ -179,7 +179,7 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
         }
 
         // approve AggregationRouterV4 to spend sUSD
-        sUSD.safeApprove(address(router), _expectedAmountOfSUSDFromSwap);
+        sUSD.approve(address(router), _expectedAmountOfSUSDFromSwap);
 
         // swap sUSD for ETH or destination token
         (bool success, bytes memory result) = address(router).call(_data);
@@ -261,7 +261,7 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
                 IERC20(desc.srcToken).safeTransferFrom(msg.sender, address(this), desc.amount);
             }
             // approve AggregationRouterV4 to spend srcToken
-            IERC20(desc.srcToken).safeApprove(address(router), desc.amount);
+            IERC20(desc.srcToken).approve(address(router), desc.amount);
         }
 
         // execute 1inch swap
