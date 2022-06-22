@@ -66,12 +66,11 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
             amountOut = swapOnSynthetix(
                 amountOut,
                 sUSD_CURRENCY_KEY,
-                _destSynthCurrencyKey,
-                address(sUSD)
+                _destSynthCurrencyKey
             );
         }
 
-        address destSynthAddress = addressResolver.getSynth(_destSynthCurrencyKey);
+        address destSynthAddress = proxyForSynth(addressResolver.getSynth(_destSynthCurrencyKey));
         IERC20(destSynthAddress).safeTransfer(msg.sender, amountOut);
   
         emit SwapInto(msg.sender, amountOut);
@@ -85,7 +84,7 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
         bytes calldata _data
     ) external override nonReentrant returns (uint) {
         // transfer synth to this contract
-        address sourceSynthAddress = addressResolver.getSynth(_sourceSynthCurrencyKey);
+        address sourceSynthAddress = proxyForSynth(addressResolver.getSynth(_sourceSynthCurrencyKey));
         IERC20(sourceSynthAddress).safeTransferFrom(msg.sender, address(this), _sourceAmount);
 
         // if source synth is NOT sUSD, swap on Synthetix is necessary 
@@ -93,8 +92,7 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
             swapOnSynthetix(
                 _sourceAmount, 
                 _sourceSynthCurrencyKey, 
-                sUSD_CURRENCY_KEY, 
-                sourceSynthAddress
+                sUSD_CURRENCY_KEY
             );
         }
 
@@ -130,7 +128,7 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
         // if not swapping from ETH, transfer source token to contract and approve spending
         if (_sourceTokenAddress != ETH_ADDRESS) {
             IERC20(_sourceTokenAddress).safeTransferFrom(msg.sender, address(this), _amount);
-            IERC20(_sourceTokenAddress).safeApprove(address(router), _amount);
+            IERC20(_sourceTokenAddress).approve(address(router), _amount);
         }
 
         // swap ETH or source token for sUSD
@@ -147,13 +145,12 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
             amountOut = swapOnSynthetix(
                 amountOut, 
                 sUSD_CURRENCY_KEY, 
-                _destSynthCurrencyKey, 
-                address(sUSD)
+                _destSynthCurrencyKey
             );
         }
 
         // send amount of destination synth to msg.sender
-        address destSynthAddress = addressResolver.getSynth(_destSynthCurrencyKey);
+        address destSynthAddress = proxyForSynth(addressResolver.getSynth(_destSynthCurrencyKey));
         IERC20(destSynthAddress).safeTransfer(msg.sender, amountOut);
   
         emit SwapInto(msg.sender, amountOut);
@@ -169,7 +166,7 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
         bytes calldata _data
     ) external override nonReentrant returns (uint) {
         // transfer synth to this contract
-        address sourceSynthAddress = addressResolver.getSynth(_sourceSynthCurrencyKey);
+        address sourceSynthAddress = proxyForSynth(addressResolver.getSynth(_sourceSynthCurrencyKey));
         IERC20(sourceSynthAddress).transferFrom(msg.sender, address(this), _amountOfSynth);
 
         // if source synth is NOT sUSD, swap on Synthetix is necessary 
@@ -177,13 +174,12 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
             swapOnSynthetix(
                 _amountOfSynth, 
                 _sourceSynthCurrencyKey, 
-                sUSD_CURRENCY_KEY, 
-                sourceSynthAddress
+                sUSD_CURRENCY_KEY
             );
         }
 
         // approve AggregationRouterV4 to spend sUSD
-        sUSD.safeApprove(address(router), _expectedAmountOfSUSDFromSwap);
+        sUSD.approve(address(router), _expectedAmountOfSUSDFromSwap);
 
         // swap sUSD for ETH or destination token
         (bool success, bytes memory result) = address(router).call(_data);
@@ -265,7 +261,7 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
                 IERC20(desc.srcToken).safeTransferFrom(msg.sender, address(this), desc.amount);
             }
             // approve AggregationRouterV4 to spend srcToken
-            IERC20(desc.srcToken).safeApprove(address(router), desc.amount);
+            IERC20(desc.srcToken).approve(address(router), desc.amount);
         }
 
         // execute 1inch swap
@@ -280,17 +276,12 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
     /// @param _amount of source synth to swap
     /// @param _sourceSynthCurrencyKey source synth key needed for exchange
     /// @param _destSynthCurrencyKey destination synth key needed for exchange
-    /// @param _sourceSynthAddress source synth address needed for approval
     /// @return amountOut: received from Synthetix swap
     function swapOnSynthetix(
         uint _amount,
         bytes32 _sourceSynthCurrencyKey,
-        bytes32 _destSynthCurrencyKey,
-        address _sourceSynthAddress
+        bytes32 _destSynthCurrencyKey
     ) internal returns (uint) {
-        //  approve Synthetix to spend sourceSynth
-        IERC20(_sourceSynthAddress).safeApprove(address(synthetix()), _amount);
-
         // execute Synthetix swap
         uint amountOut = synthetix().exchangeWithTracking(
             _sourceSynthCurrencyKey,
@@ -302,6 +293,16 @@ contract SynthSwap is ISynthSwap, Owned, ReentrancyGuard {
 
         require(amountOut > 0, "SynthSwap: swapOnSynthetix failed");
         return amountOut;
+    }
+
+    /// @notice get the proxy address from the synth implementation contract
+    /// @dev only possible because Synthetix synths inherit Proxyable which track proxy()
+    /// @param synthImplementation synth implementation address
+    /// @return synthProxy proxy address
+    function proxyForSynth(address synthImplementation) internal returns (address synthProxy) {
+        (bool success, bytes memory retVal) = synthImplementation.call(abi.encodeWithSignature("proxy()"));
+        require(success, "get Proxy address failed");
+        (synthProxy) = abi.decode(retVal, (address));
     }
 
 }
