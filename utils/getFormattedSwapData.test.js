@@ -1,4 +1,4 @@
-const getFormattedSwapData = require('@jaredborders/synthswap-utils');
+const getFormattedSwapData = require("./index.js");
 
 const testResponse1 = {
 	fromToken: {
